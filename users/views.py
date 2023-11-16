@@ -46,6 +46,17 @@ class UserRegisterView(APIView):
 
 # /api/v1/users/login/
 class LoginView(APIView):
+    @swagger_auto_schema(
+        operation_id='로그인',
+        operation_description='계정명과 비밀번호를 활용하여 로그인을 진행합니다.',
+        tags=['사용자', '로그인', '인증'],
+        request_body=LOGIN_PARAMETERS,
+        responses={
+            200: '정상적으로 로그인이 완료되었습니다.',
+            400: '로그인에 실패했습니다. 필수값이 입력되지 않았습니다.',
+            404: '로그인에 실패했습니다. 해당하는 사용자를 찾지 못했습니다.'
+        }
+    )
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
