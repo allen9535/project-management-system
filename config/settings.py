@@ -21,6 +21,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 CUSTOM_APPS = [
     'users',
+    'teams',
 ]
 
 THIRD_PARTY_APPS = [

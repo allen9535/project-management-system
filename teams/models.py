@@ -9,17 +9,17 @@ class Team(models.Model):
         on_delete=models.CASCADE,
         verbose_name='팀장'
     )
-    name = models.CharField(max_length=20, verbose_name='팀명')
+    name = models.CharField(unique=True, max_length=20, verbose_name='팀명')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일')
 
 
-class Teammate(models.Model):
+class TeamMember(models.Model):
     team = models.ForeignKey(
         Team,
         on_delete=models.CASCADE,
         verbose_name='팀'
     )
-    mate = models.ForeignKey(
+    member = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='팀원'

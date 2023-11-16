@@ -36,15 +36,11 @@ class UserRegisterView(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            return Response(
-                {
-                    'message': '회원가입이 완료되었습니다.'
-                }, status=status.HTTP_201_CREATED
-            )
+            return Response({'data': '회원가입이 완료되었습니다.'}, status=status.HTTP_201_CREATED)
 
         # 유효성 검사에서 문제가 발생했을 경우
         # 해당 문제에 대한 메시지와 상태 코드 400 반환
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # /api/v1/users/login/
@@ -66,20 +62,12 @@ class LoginView(APIView):
 
         # 계정명과 비밀번호는 필수값, 두 값이 모두 있어야 함
         if (username is None) or (password is None):
-            return Response(
-                {
-                    'message': '필수값(계정명, 비밀번호)가 입력되지 않았습니다.'
-                }, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'data': '필수값(계정명, 비밀번호)가 입력되지 않았습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 해당하는 사용자가 있으면 User 객체를, 없으면 None 반환
         user = authenticate(username=username, password=password)
         if user is None:
-            return Response(
-                {
-                    'message': '해당하는 사용자를 찾을 수 없습니다.'
-                }, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({'data': '해당하는 사용자를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
         # 액세스 토큰과 리프레시 토큰을 함께 발급
         token = TokenObtainPairSerializer.get_token(user)
@@ -92,12 +80,7 @@ class LoginView(APIView):
         # 액세스 토큰을 키 값으로 리프레시 토큰을 저장함
         cache.set(f'{access_token}', refresh_token, 60 * 60 * 24 * 14)
 
-        return Response(
-            {
-                'message': '로그인이 완료되었습니다',
-                'access': access_token
-            }, status=status.HTTP_200_OK
-        )
+        return Response({'data': '로그인이 완료되었습니다', 'access': access_token}, status=status.HTTP_200_OK)
 
 
 # /api/v1/users/logout/
@@ -124,11 +107,7 @@ class LogoutView(APIView):
         refresh_token = cache.get(f'{access_token}')
 
         if refresh_token is None:
-            return Response(
-                {
-                    'message': '로그아웃이 완료되었습니다. 그러나 리프레시 토큰이 정상적으로 처리되지 않았을 수 있습니다.'
-                }, status=status.HTTP_202_ACCEPTED
-            )
+            return Response({'data': '로그아웃이 완료되었습니다. 그러나 리프레시 토큰이 정상적으로 처리되지 않았을 수 있습니다.'}, status=status.HTTP_202_ACCEPTED)
 
         try:
             # 리프레시 토큰을 문자열에서 리프레시 토큰 객체로 형변환
@@ -139,15 +118,7 @@ class LogoutView(APIView):
             # 캐시 데이터에서 리프레시 토큰 삭제
             cache.delete(f'{access_token}')
 
-            return Response(
-                {
-                    'message': '로그아웃이 완료되었습니다.'
-                }, status=status.HTTP_200_OK
-            )
+            return Response({'data': '로그아웃이 완료되었습니다.'}, status=status.HTTP_200_OK)
         # 리프레시 토큰 처리 중 발생할 수 있는 예외를 처리
         except (InvalidToken, TokenError) as error:
-            return Response(
-                {
-                    'message': f'로그아웃이 완료되었습니다. 그러나 토큰 처리 중 에러가 발생했습니다. {error}'
-                }, status=status.HTTP_202_ACCEPTED
-            )
+            return Response({'data': f'{error}'}, status=status.HTTP_202_ACCEPTED)
