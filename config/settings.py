@@ -119,6 +119,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
 
+# DRF 설정
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+}
+
 # Simple JWT 설정
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
