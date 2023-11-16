@@ -17,9 +17,10 @@ jobs:
               run: |
                   echo "$EC2_PRIVATE_KEY" > ec2_private_key
                   chmod 600 ec2_private_key
+                  ssh-keyscan -H ${EC2_HOST} >> ~/.ssh/known_hosts
                   ssh -o StrictHostKeyChecking=no -i ec2_private_key ${EC2_USER_NAME}@${EC2_HOST} '
-                  cd /project-management &&
-                  git checkout main &&
-                  git fetch --all &&
-                  git reset --hard origin/main &&
-                  git pull origin main'
+                    cd /project-management &&
+                    git checkout main &&
+                    git fetch --all &&
+                    git reset --hard origin/main &&
+                    git pull origin main'
