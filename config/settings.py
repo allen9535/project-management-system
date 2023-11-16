@@ -149,6 +149,6 @@ CACHES = {
 # Swagger 설정
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
-        "DRF Token": {"type": "apiKey", "name": "Authorization", "in": "header"}
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
     }
 }

@@ -4,20 +4,38 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from django.contrib.auth.models import Group
+from django.core.exceptions import ObjectDoesNotExist
 
 from django.db import transaction, DatabaseError
 
 from drf_yasg.utils import swagger_auto_schema
 
+from users.models import User
+from users.serializers import UserSerializer
+from .models import Team
 from .serializers import TeamCreateSerializer
-from .permissions import CanCreateTeamPermission
+from .permissions import CanInviteTeamPermission
+
+from swagger import TEAM_CREATE_PARAMETERS, TEAM_INVITE_PARAMETERS
 
 
+# /api/v1/teams/create/
 class TeamCreateView(APIView):
-    # 인증된 사용자,
-    # 팀 생성 가능자(리더가 아닌 사용자)에게만 권한 부여
-    permission_classes = [IsAuthenticated, CanCreateTeamPermission]
+    # 인증된 사용자, 팀 생성 가능자(리더가 아닌 사용자)에게만 권한 부여
+    permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_id='팀 생성',
+        operation_description='일반 사용자가 팀명을 입력하여 새 팀을 생성할 수 있습니다. 기존에 사용되고 있는 팀명은 사용할 수 없으며, 이미 팀장인 사용자 또한 새 팀을 생성할 수 없습니다.',
+        tags=['팀', '생성'],
+        request_body=TEAM_CREATE_PARAMETERS,
+        responses={
+            201: '팀 생성이 성공적으로 완료되었습니다.',
+            400: '팀 생성 중 에러가 발생했습니다. 입력된 값을 확인해주세요.',
+            401: '인증되지 않은 사용자는 사용할 수 없습니다.',
+            500: '데이터를 DB에 저장하던 중 문제가 발생했습니다.'
+        }
+    )
     def post(self, request):
         # 사용자 데이터
         user = request.user
@@ -34,11 +52,9 @@ class TeamCreateView(APIView):
         serializer = TeamCreateSerializer(data=team_data)
         if serializer.is_valid():
             # get_or_create는 튜플 형태로
-            # (생성되거나 생성한 객체, 생성 여부) 를 반환한다
-            # 사실 is_created의 경우 사용할 일이 없음
-            leader_group, is_created = Group.objects.get_or_create(
-                name='leader'
-            )
+            # (생성되거나 가져온 객체, 생성 여부) 를 반환한다
+            # 생성되거나 가져온 객체 사용
+            leader_group = Group.objects.get_or_create(name='leader')[0]
 
             try:
                 # 트랜잭션으로 관리
@@ -53,10 +69,74 @@ class TeamCreateView(APIView):
                     serializer.save()
             # 위 과정 처리 중 오류 발생을 대비한 예외처리
             except DatabaseError as error:
-                return Response({'data': f'{error}'}, status=status.HTTP_418_IM_A_TEAPOT)
+                return Response(
+                    {
+                        'data': f'{error}'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
             # 정상적으로 작업이 완료되었을 때
             return Response({'data': serializer.data}, status=status.HTTP_201_CREATED)
 
         # 시리얼라이저의 유효성 검사 실패시
+        return Response({'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# /api/v1/teams/invite/
+class TeamInviteView(APIView):
+    # 인증된 사용자, 팀원 초대 가능자(팀장)에게만 권한 부여
+    permission_classes = [IsAuthenticated, CanInviteTeamPermission]
+
+    @swagger_auto_schema(
+        operation_id='팀 초대',
+        operation_description='현재 로그인한 팀장 사용자가 다른 사용자를 팀에 초대할 수 있습니다.',
+        tags=['팀', '초대'],
+        request_body=TEAM_INVITE_PARAMETERS,
+        responses={
+            200: '성공적으로 작업을 완료했습니다.',
+            401: '로그인 후 사용해주세요.',
+            403: '팀 초대는 팀장만 가능합니다.',
+            404: '해당하는 사용자나 팀을 찾을 수 없습니다. 입력값을 다시 확인해주세요.',
+            423: '해당 사용자는 초대 가능한 상태가 아닙니다.'
+        }
+    )
+    def post(self, request):
+        user = request.user
+
+        try:
+            target_user = User.objects.get(
+                username=request.data.get('target')
+            )
+
+            invite_team = Team.objects.get(name=request.data.get('team'))
+        except ObjectDoesNotExist as error:
+            return Response(
+                {
+                    'data': f'{error}'
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if target_user.message is not None:
+            return Response(
+                {
+                    'data': '해당 사용자는 이미 초대를 받고 있습니다.'
+                }, status=status.HTTP_423_LOCKED
+            )
+        elif target_user.groups.filter(name='leader').exists():
+            return Response(
+                {
+                    'data': '해당 사용자는 팀장 사용자입니다. 초대할 수 없습니다.'
+                }, status=status.HTTP_423_LOCKED
+            )
+
+        invite_message = {
+            'message': f'{invite_team.name}: {user.username} 님이 {invite_team.name} 팀에 초대하셨습니다.'
+        }
+
+        serializer = UserSerializer(target_user, invite_message, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+
         return Response({'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
