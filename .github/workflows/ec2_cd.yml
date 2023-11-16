@@ -16,7 +16,7 @@ jobs:
                   EC2_USER_NAME: ${{ secrets.EC2_USER_NAME }}
               run: |
                   echo "${EC2_PRIVATE_KEY}" > ec2_private_key
-                  chmod 777 ec2_private_key
+                  chmod 600 ec2_private_key
                   ssh -o StrictHostKeyChecking=no -i ec2_private_key ${EC2_USER_NAME}@${EC2_HOST} '
                     cd /project-management &&
                     git checkout main &&
