@@ -12,7 +12,7 @@ schema_view = get_schema_view(
         description="팀 내의 프로젝트 진행을 도와주는 API입니다.",
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(
-            url="https://github.com/allen9535/budget-management-project"),
+            url="https://github.com/allen9535/project-management-system"),
     ),
     public=True,
 )

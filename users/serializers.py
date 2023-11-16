@@ -41,3 +41,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         validate_password(password)
 
         return attrs
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'

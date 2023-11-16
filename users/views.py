@@ -14,7 +14,7 @@ from django.core.cache import cache
 from drf_yasg.utils import swagger_auto_schema
 
 from .serializers import RegisterSerializer
-from swagger import *
+from swagger import USER_REGISTER_PARAMETERS, LOGIN_PARAMETERS
 
 
 # /api/v1/users/register/
