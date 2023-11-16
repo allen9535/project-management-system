@@ -34,7 +34,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=32, unique=True, verbose_name='계정명')
     message = models.TextField(blank=True, null=True, verbose_name='받은 메시지')
-    is_active = models.BooleanField(default=False, verbose_name='활성화 여부')
+    is_active = models.BooleanField(default=True, verbose_name='활성화 여부')
     is_staff = models.BooleanField(default=False, verbose_name='스태프 여부')
     is_superuser = models.BooleanField(default=False, verbose_name='슈퍼유저 여부')
     date_joined = models.DateTimeField(auto_now=True, verbose_name='계정 생성일')
