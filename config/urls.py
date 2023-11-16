@@ -7,9 +7,9 @@ from drf_yasg import openapi
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Budget Management API",
+        title="Project Management API",
         default_version="v1",
-        description="사용자의 예산 관리를 도와주는 서비스입니다.",
+        description="팀 내의 프로젝트 진행을 도와주는 API입니다.",
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(
             url="https://github.com/allen9535/budget-management-project"),
@@ -32,4 +32,6 @@ urlpatterns = [
     ),
 
     path('admin/', admin.site.urls),
+
+    path('api/v1/users/', include('users.urls')),
 ]
