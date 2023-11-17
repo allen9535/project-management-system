@@ -7,9 +7,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
-
+from django.contrib.auth.models import Group
 from django.contrib.auth import authenticate
 from django.core.cache import cache
+from django.db import transaction, DatabaseError
 
 from drf_yasg.utils import swagger_auto_schema
 
@@ -94,7 +95,8 @@ class LogoutView(APIView):
         tags=['사용자', '로그아웃', '인증'],
         responses={
             200: '정상적으로 로그아웃이 완료되었습니다.',
-            202: '로그아웃은 성공했습니다. 그러나 정상적으로 로그아웃이 처리되지 않았을 수 있습니다. 에러 메시지를 확인해주세요.'
+            202: '로그아웃은 성공했습니다. 그러나 정상적으로 로그아웃이 처리되지 않았을 수 있습니다. 에러 메시지를 확인해주세요.',
+            401: '인증되지 않은 사용자는 사용할 수 없습니다.'
         }
     )
     def post(self, request):
@@ -122,3 +124,107 @@ class LogoutView(APIView):
         # 리프레시 토큰 처리 중 발생할 수 있는 예외를 처리
         except (InvalidToken, TokenError) as error:
             return Response({'data': f'{error}'}, status=status.HTTP_202_ACCEPTED)
+
+
+# /api/v1/users/invite/
+class UserInviteDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_id='초대 메시지 확인',
+        operation_description='사용자에게 온 초대 메시지를 확인합니다.',
+        tags=['사용자', '팀', '초대'],
+        responses={
+            200: '사용자에게 온 초대 메시지 검색이 성공적으로 완료되었습니다.',
+            204: '사용자에게 온 초대 메시지가 없습니다.',
+            401: '인증되지 않은 사용자는 사용할 수 없습니다.'
+        }
+    )
+    def get(self, request):
+        user = request.user
+
+        # 현재 사용자에게 온 메시지가 없을 경우
+        if user.message is None:
+            return Response(
+                {'data': '초대받은 내용이 없습니다.'}, status=status.HTTP_204_NO_CONTENT
+            )
+
+        # 팀 메시지는 정해진 양식으로 보내고 있으므로
+        # 팀명과 초대자를 가져옴
+        # user.message → team:팀명,from:팀장
+
+        # 팀명
+        invite_team = user.message.split(',')[0].split(':')[1]
+        # 팀장
+        invite_from = user.message.split(',')[1].split(':')[1]
+        # 출력할 초대 메시지
+        invite_message = f'{invite_team} 팀의 {invite_from}팀장에게서 초대를 받았습니다.'
+
+        return Response(
+            {'date': invite_message}, status=status.HTTP_200_OK
+        )
+
+
+# /api/v1/users/invite/accept/
+class UserInviteAcceptView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_id='초대 메시지 수락',
+        operation_description='사용자에게 온 초대 메시지를 수락합니다.',
+        tags=['사용자', '팀', '초대'],
+        responses={
+            202: '초대 메시지 수락이 성공적으로 완료되었습니다.',
+            204: '사용자에게 온 초대 메시지가 없습니다.',
+            401: '인증되지 않은 사용자는 사용할 수 없습니다.',
+            500: '요청을 처리하던 중 서버에 문제가 발생했습니다.'
+        }
+    )
+    def post(self, request):
+        user = request.user
+
+        # 팀 메시지는 정해진 양식으로 보내고 있으므로
+        # split으로 팀명만 가져옴
+        # user.message → team:팀명,from:팀장
+
+        try:
+            # 메시지를 분석해서 팀명 가져옴
+            team_name = user.message.split(',')[0].split(':')[1]
+        # 해당 사용자에게 초대 메시지가 없을 경우를 대비한 예외처리
+        except AttributeError as error:
+            return Response(
+                {'data': '해당 사용자는 초대 메시지가 없습니다.'}, status=status.HTTP_204_NO_CONTENT
+            )
+
+        # 그룹 객체
+        team = Group.objects.get(name=team_name)
+
+        try:
+            # 트랜잭션으로 관리
+            # 사용자에게 그룹 할당하기 + 사용자의 메시지 필드 비우기
+            # + 만약 이미 팀이 있다면 그 팀으로 옮기기
+            # 하나라도 문제가 발생하면 전부 롤백
+            with transaction.atomic():
+                # 현재 사용자가 팀장 그룹 이외의 그룹에 소속되어 있다면 특정 팀에 소속된 것
+                if user.groups.exclude(name='leader').exists():
+                    # 그 팀의 그룹 객체
+                    joined = user.groups.exclude(name='leader').first()
+                    # 현재 사용자에게서 팀 그룹 삭제
+                    user.groups.remove(joined)
+
+                # 현재 사용자를 메시지에 있던 팀 그룹에 추가
+                user.groups.add(team)
+
+                # 현재 사용자의 메시지 필드를 비움
+                user.message = None
+                # 위 과정이 전부 정상적으로 진행되었다면 저장
+                user.save()
+        # 트랜잭션에서 에러가 발생할 경우를 대비한 예외 처리
+        except DatabaseError as error:
+            return Response(
+                {'data': f'{error}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return Response(
+            {'data': f'{team_name} 팀의 초대를 수락하셨습니다.'}, status=status.HTTP_202_ACCEPTED
+        )
