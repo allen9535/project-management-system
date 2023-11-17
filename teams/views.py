@@ -26,7 +26,7 @@ class TeamCreateView(APIView):
 
     @swagger_auto_schema(
         operation_id='팀 생성',
-        operation_description='일반 사용자가 팀명을 입력하여 새 팀을 생성할 수 있습니다. 기존에 사용되고 있는 팀명은 사용할 수 없으며, 이미 팀장인 사용자 또한 새 팀을 생성할 수 없습니다.',
+        operation_description='일반 사용자가 팀명을 입력하여 새 팀을 생성할 수 있습니다. 기존에 사용되고 있는 팀명은 사용할 수 없습니다.',
         tags=['팀', '생성'],
         request_body=TEAM_CREATE_PARAMETERS,
         responses={
@@ -130,7 +130,7 @@ class TeamInviteView(APIView):
             )
 
         invite_message = {
-            'message': f'{invite_team.name}: {user.username} 님이 {invite_team.name} 팀에 초대하셨습니다.'
+            'message': f'team:{invite_team.name},from:{user.username}'
         }
 
         serializer = UserSerializer(target_user, invite_message, partial=True)

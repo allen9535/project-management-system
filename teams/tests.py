@@ -19,7 +19,7 @@ class TeamCreateTestCase(APITestCase):
     def test_default(self):
         # 기존 DB의 사용자 중 아직 팀을 생성하지 않은 사용자로 로그인 시도
         login_data = {
-            'username': 'testuser2',
+            'username': 'normaluser1',
             'password': 'qwerty123!@#'
         }
 
@@ -49,7 +49,7 @@ class TeamCreateTestCase(APITestCase):
     def test_duplicated_team_name(self):
         # 기존 DB의 사용자 중 아직 팀을 생성하지 않은 사용자로 로그인 시도
         login_data = {
-            'username': 'testuser2',
+            'username': 'normaluser1',
             'password': 'qwerty123!@#'
         }
 
@@ -64,7 +64,7 @@ class TeamCreateTestCase(APITestCase):
 
         # 이미 존재하는 팀명 사용
         request_data = {
-            'name': '첫번째 팀'
+            'name': '첫번째팀'
         }
 
         # 팀 생성 API에 요청 보내기
@@ -91,7 +91,7 @@ class TeamInviteTestCase(APITestCase):
     def test_default(self):
         # 기존 DB의 사용자 중 팀장인 사용자로 로그인 시도
         login_data = {
-            'username': 'testuser',
+            'username': 'teamleader1',
             'password': 'qwerty123!@#'
         }
 
@@ -106,8 +106,8 @@ class TeamInviteTestCase(APITestCase):
 
         # 정상적으로 구성된 데이터
         request_data = {
-            'target': 'testuser3',
-            'team': '첫번째 팀',
+            'target': 'normaluser4',
+            'team': '첫번째팀',
         }
 
         response = self.client.post(self.url, request_data)
@@ -121,7 +121,7 @@ class TeamInviteTestCase(APITestCase):
     def test_no_invite_target(self):
         # 기존 DB의 사용자 중 팀장인 사용자로 로그인 시도
         login_data = {
-            'username': 'testuser',
+            'username': 'teamleader1',
             'password': 'qwerty123!@#'
         }
 
@@ -136,7 +136,7 @@ class TeamInviteTestCase(APITestCase):
 
         #  타켓 사용자 미입력
         request_data = {
-            'team': '첫번째 팀',
+            'team': '첫번째팀',
         }
 
         response = self.client.post(self.url, request_data)
@@ -150,7 +150,7 @@ class TeamInviteTestCase(APITestCase):
     def test_no_team(self):
         # 기존 DB의 사용자 중 팀장인 사용자로 로그인 시도
         login_data = {
-            'username': 'testuser',
+            'username': 'teamleader1',
             'password': 'qwerty123!@#'
         }
 
@@ -165,7 +165,7 @@ class TeamInviteTestCase(APITestCase):
 
         #  팀명 미입력
         request_data = {
-            'target': 'testuser3',
+            'target': 'normaluser4',
         }
 
         response = self.client.post(self.url, request_data)
@@ -179,7 +179,7 @@ class TeamInviteTestCase(APITestCase):
     def test_duplicated_invite(self):
         # 기존 DB의 사용자 중 팀장인 사용자로 로그인 시도
         login_data = {
-            'username': 'testuser',
+            'username': 'teamleader1',
             'password': 'qwerty123!@#'
         }
 
@@ -194,8 +194,8 @@ class TeamInviteTestCase(APITestCase):
 
         # 이미 초대된 사용자를 초대
         request_data = {
-            'target': 'testuser2',
-            'team': '첫번째 팀',
+            'target': 'normaluser1',
+            'team': '첫번째팀',
         }
 
         response = self.client.post(self.url, request_data)
@@ -209,7 +209,7 @@ class TeamInviteTestCase(APITestCase):
     def test_not_authenticated(self):
         # 정상적으로 구성된 데이터
         request_data = {
-            'target': 'testuser3',
+            'target': 'normaluser4',
             'team': '첫번째 팀',
         }
 
@@ -224,7 +224,7 @@ class TeamInviteTestCase(APITestCase):
     def test_no_permission(self):
         # 기존 DB의 사용자 중 팀장이 아닌 사용자로 로그인 시도
         login_data = {
-            'username': 'testuser3',
+            'username': 'normaluser1',
             'password': 'qwerty123!@#'
         }
 
@@ -239,8 +239,8 @@ class TeamInviteTestCase(APITestCase):
 
         # 정상적으로 구성된 데이터
         request_data = {
-            'target': 'testuser2',
-            'team': '두번째',
+            'target': 'normaluser4',
+            'team': '두번째팀',
         }
 
         response = self.client.post(self.url, request_data)
@@ -254,7 +254,7 @@ class TeamInviteTestCase(APITestCase):
     def test_invite_leader(self):
         # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
         login_data = {
-            'username': 'testuser',
+            'username': 'teamleader1',
             'password': 'qwerty123!@#'
         }
 
@@ -269,8 +269,8 @@ class TeamInviteTestCase(APITestCase):
 
         # 초대 상대가 팀장
         request_data = {
-            'target': 'testuser2',
-            'team': '첫번째 팀',
+            'target': 'teamleader2',
+            'team': '첫번째팀',
         }
 
         response = self.client.post(self.url, request_data)

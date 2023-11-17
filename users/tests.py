@@ -109,7 +109,7 @@ class UserRegisterTestCase(APITestCase):
     def test_invalid_username_already_exists(self):
         # 이미 존재하는 계정명을 입력
         user_data = {
-            'username': 'testuser',
+            'username': 'teamleader1',
             'password': 'qwerty123!@#'
         }
 
@@ -188,7 +188,7 @@ class LoginTestCase(APITestCase):
     def test_default(self):
         # DB 데이터에 있는 계정을 입력
         login_data = {
-            'username': 'testuser',
+            'username': 'teamleader1',
             'password': 'qwerty123!@#'
         }
 
@@ -215,7 +215,7 @@ class LoginTestCase(APITestCase):
     # 비밀번호를 입력하지 않는 경우
     def test_no_username(self):
         login_data = {
-            'username': 'testuser'
+            'username': 'teamleader1'
         }
 
         response = self.client.post(self.url, login_data)
@@ -253,7 +253,7 @@ class LoginTestCase(APITestCase):
     # 잘못된 비밀번호를 입력한 경우
     def test_invalid_password(self):
         login_data = {
-            'username': 'testuser',
+            'username': 'teamleader1',
             'password': 'invalidpassword'
         }
 
@@ -285,7 +285,7 @@ class LogoutTestCase(APITestCase):
     def test_default(self):
         # 로그인 데이터 생성
         login_data = {
-            'username': 'testuser',
+            'username': 'teamleader1',
             'password': 'qwerty123!@#'
         }
 
@@ -312,6 +312,182 @@ class LogoutTestCase(APITestCase):
         response = self.client.post(self.url)
 
         # 인증되지 않은 사용자이므로 상태코드 401이 반환됨
+        if response.status_code != 401:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+# 사용자가 자신에게 온 팀 초대 메시지를 확인하는 것에 대한 테스트
+class UserInviteReadTestCase(APITestCase):
+    fixtures = ['db.json']
+
+    def setUp(self):
+        # APIClient 객체 생성
+        self.client = APIClient()
+
+        # /api/v1/users/invite/
+        self.url = reverse('read_invite')
+
+    # 팀 초대 메시지가 있는 케이스
+    def test_message_exist(self):
+        # 기존 DB의 사용자 중 팀 초대를 받은 팀장이 아닌 사용자로 로그인
+        login_data = {
+            'username': 'normaluser1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # URL로 GET 요청
+        response = self.client.get(self.url)
+
+        if response.status_code != 200:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    # 팀 초대 메시지가 없는 케이스
+    def test_message_not_exist(self):
+        # 기존 DB의 사용자 중 팀 초대를 받지 않은 팀장이 아닌 사용자로 로그인
+        login_data = {
+            'username': 'normaluser4',
+            'password': 'qwerty123!@#'
+        }
+
+        # 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # URL로 GET 요청
+        response = self.client.get(self.url)
+
+        if response.status_code != 204:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    # 사용자가 인증 되지 않은 케이스
+    def test_not_authenticated(self):
+        # 로그인을 진행하지 않음
+
+        # URL로 GET 요청
+        response = self.client.get(self.url)
+
+        if response.status_code != 401:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+# 사용자가 자신에게 온 팀 초대 메시지를 수락하는 것에 대한 테스트
+class UserInviteAcceptTestCase(APITestCase):
+    fixtures = ['db.json']
+
+    def setUp(self):
+        # APIClient 객체 생성
+        self.client = APIClient()
+
+        # /api/v1/users/invite/accept/
+        self.url = reverse('accept_invite')
+
+    # 받아들일 팀 초대 메시지가 있는 케이스
+    def test_default(self):
+        # 기존 DB의 사용자 중 팀 초대를 받은 팀장이 아닌 사용자로 로그인
+        login_data = {
+            'username': 'normaluser1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # URL로 POST 요청
+        response = self.client.post(self.url)
+
+        if response.status_code != 202:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+    # 받아들일 팀 초대 메시지가 없는 케이스
+    def test_message_not_exist(self):
+        # 기존 DB의 사용자 중 팀 초대를 받지 않은 팀장이 아닌 사용자로 로그인
+        login_data = {
+            'username': 'normaluser4',
+            'password': 'qwerty123!@#'
+        }
+
+        # 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # URL로 POST 요청
+        response = self.client.post(self.url)
+
+        if response.status_code != 204:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    # 이미 참여한 팀이 있는 케이스
+    def test_invite_team_exist(self):
+        # 기존 DB의 사용자 중 이미 팀에 소속된 팀장이 아닌 사용자로 로그인
+        # + 초대 메시지는 있는 사용자
+        login_data = {
+            'username': 'normaluser6',
+            'password': 'qwerty123!@#'
+        }
+
+        # 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # URL로 POST 요청
+        response = self.client.post(self.url)
+
+        # 사용자에게서 기존 팀 그룹을 삭제하고 새 팀 그룹을 추가하게 되므로
+        # 상태 코드는 202
+        if response.status_code != 202:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+    # 사용자가 인증 되지 않은 케이스
+    def test_not_authenticated(self):
+        # 로그인을 진행하지 않음
+
+        # URL로 POST 요청
+        response = self.client.post(self.url)
+
         if response.status_code != 401:
             print(response.data)
 
