@@ -17,7 +17,7 @@ from boards.models import Board
 from .models import Team
 from .serializers import TeamCreateSerializer
 
-from swagger import TEAM_CREATE_PARAMETERS, TEAM_INVITE_PARAMETERS
+from swagger import *
 
 
 # /api/v1/teams/create/
@@ -31,10 +31,10 @@ class TeamCreateView(APIView):
         tags=['팀', '생성'],
         request_body=TEAM_CREATE_PARAMETERS,
         responses={
-            201: '팀 생성이 성공적으로 완료되었습니다.',
-            400: '팀 생성 중 에러가 발생했습니다. 입력된 값을 확인해주세요.',
-            401: '인증되지 않은 사용자는 사용할 수 없습니다.',
-            500: '데이터를 DB에 저장하던 중 문제가 발생했습니다.'
+            201: SUCCESS_MESSAGE_201,
+            400: ERROR_MESSAGE_400,
+            401: ERROR_MESSAGE_401,
+            500: ERROR_MESSAGE_500
         }
     )
     def post(self, request):
@@ -126,11 +126,11 @@ class TeamInviteView(APIView):
         tags=['팀', '초대'],
         request_body=TEAM_INVITE_PARAMETERS,
         responses={
-            200: '성공적으로 작업을 완료했습니다.',
-            401: '로그인 후 사용해주세요.',
-            403: '팀 초대는 해당 팀의 팀장만 가능합니다.',
-            404: '해당하는 사용자나 팀을 찾을 수 없습니다. 입력값을 다시 확인해주세요.',
-            423: '해당 사용자는 초대 가능한 상태가 아닙니다.'
+            200: SUCCESS_MESSAGE_200,
+            401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403,
+            404: ERROR_MESSAGE_404,
+            423: ERROR_MESSAGE_423
         }
     )
     def post(self, request):

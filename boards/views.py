@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction, DatabaseError
 
 from drf_yasg.utils import swagger_auto_schema
 
@@ -12,7 +13,7 @@ from teams.models import Team
 from .models import Board, Column
 from .serializers import ColumnSerializer, BoardSerializer
 
-from swagger import COLUMN_CREATE_PARAMETER
+from swagger import *
 
 
 # /api/v1/boards/column/create/
@@ -27,10 +28,10 @@ class ColumnCreateView(APIView):
         tags=['컬럼', '생성'],
         request_body=COLUMN_CREATE_PARAMETER,
         responses={
-            201: '성공적으로 컬럼을 생성했습니다.',
-            400: '입력값 오류. 컬럼 생성에 실패했습니다. 잘못된 값이 입력되었습니다.',
-            401: '인증 오류, 인증되지 않은 사용자입니다.',
-            403: '권한 오류, 팀장이 자기 보드에만 컬럼을 생성할 수 있습니다.'
+            201: SUCCESS_MESSAGE_201,
+            400: ERROR_MESSAGE_400,
+            401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403
         }
     )
     def post(self, request):
@@ -87,6 +88,18 @@ class ColumnUpdateView(APIView):
     # 인증된 사용자, 팀 구성원 전체에 권한 부여
     permission_classes = [IsAuthenticated, IsTeamMember]
 
+    @swagger_auto_schema(
+        operation_id='컬럼 수정',
+        operation_description='컬럼 id와 기타 데이터를 받아 컬럼을 수정합니다.',
+        tags=['컬럼', '수정'],
+        request_body=COLUMN_UPDATE_PARAMETER,
+        responses={
+            200: SUCCESS_MESSAGE_200,
+            400: ERROR_MESSAGE_400,
+            401: ERROR_MESSAGE_401,
+            404: ERROR_MESSAGE_404
+        }
+    )
     def put(self, request):
         if request.data.get('sequence'):
             return Response(
@@ -96,7 +109,7 @@ class ColumnUpdateView(APIView):
         user = request.user
 
         # 사용자 그룹 정보로 팀 객체 가져옴
-        own_team = Board.objects.get(
+        own_board = Board.objects.get(
             team__name=user.groups.exclude(name='leader').first().name
         )
 
@@ -104,7 +117,7 @@ class ColumnUpdateView(APIView):
             # 현재 사용자의 팀이 소유한 보드의 특정 컬럼을 가져옴
             column = Column.objects.get(
                 id=request.data.get('column'),
-                board=own_team
+                board=own_board
             )
         except (ObjectDoesNotExist, ValueError) as error:
             return Response({'data': f'{error}'}, status=status.HTTP_404_NOT_FOUND)
@@ -115,9 +128,121 @@ class ColumnUpdateView(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            return Response({'data': serializer.data}, status=status.HTTP_202_ACCEPTED)
+            return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
         return Response({'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# /api/v1/boards/column/update/sequence/
+class ColumnUpdateSequenceView(APIView):
+    # 권한 설정
+    # 인증된 사용자, 팀 구성원 전체에 권한 부여
+    permission_classes = [IsAuthenticated, IsTeamMember]
+
+    @swagger_auto_schema(
+        operation_id='컬럼 순서 수정',
+        operation_description='컬럼 id와 변경된 순서를 받아 컬럼 순서를 수정합니다.',
+        tags=['컬럼', '수정', '순서'],
+        request_body=COLUMN_UPDATE_SEQUENCE_PARAMETER,
+        responses={
+            200: SUCCESS_MESSAGE_200,
+            400: ERROR_MESSAGE_400,
+            401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403,
+            404: ERROR_MESSAGE_404
+        }
+    )
+    def put(self, request):
+        user = request.user
+
+        try:
+            # 유효하지 않은 순서값을 입력했을 때를 대비한 예외처리
+            update_sequence = int(request.data.get('sequence'))
+        except (ValueError, TypeError) as error:
+            return Response(
+                {'data': f'{error}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 사용자 그룹 정보로 팀 객체 가져옴
+        own_board = Board.objects.get(
+            team__name=user.groups.exclude(name='leader').first().name
+        )
+
+        try:
+            # 현재 사용자의 팀이 소유한 보드의 특정 컬럼을 가져옴
+            target_column = Column.objects.get(
+                id=request.data.get('column'),
+                board=own_board
+            )
+        except (ObjectDoesNotExist, ValueError) as error:
+            return Response({'data': f'{error}'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 현재 보드에 있는 컬럼 총 갯수
+        column_count = len(Column.objects.filter(board=own_board))
+        # 만약 업데이트할 순서값이 현재 위치 그대로일 경우
+        if target_column.sequence == update_sequence:
+            return Response(
+                {'data': '데이터 수정이 완료되었습니다.'},
+                status=status.HTTP_200_OK
+            )
+        # 만약 업데이트할 순서값이 보드 내 전체 컬럼 갯수보다 크거나
+        # 0 이하인 경우
+        elif (update_sequence > column_count) or (update_sequence <= 0):
+            return Response(
+                {'data': '유효한 순서값을 입력해주세요.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 트랜잭션으로 관리
+            # 하나라도 문제가 발생하면 전부 롤백
+            with transaction.atomic():
+                # 순서를 변경할 컬럼의 순서가 원래 있던 자리보다 왼쪽으로 갈 때(순서값이 작아질 때)
+                if target_column.sequence > update_sequence:
+                    # 순서를 변경할 컬럼과 변경 후 가게 될 자리 사이에 있는 컬럼들을 오름차순으로 가져옴
+                    before_target_columns = Column.objects.filter(
+                        sequence__gte=update_sequence,
+                        sequence__lt=target_column.sequence
+                    ).order_by('sequence')
+
+                    # 순회하면서 순서값들을 1씩 상승
+                    for column in before_target_columns:
+                        column.sequence += 1
+                        column.save()
+
+                    # 순서를 변경할 컬럼의 순서를 변경하고자 했던 순서로 변경
+                    target_column.sequence = update_sequence
+                    target_column.save()
+                # 순서를 변경할 컬럼의 순서가 원래 있던 자리보다 오른쪽으로 갈 때(순서값이 커질 때)
+                else:
+                    # 순서를 변경할 컬럼과 변경 후 가게 될 자리 사이에 있는 컬럼들을 오름차순으로 가져옴
+                    after_target_columns = Column.objects.filter(
+                        sequence__gt=target_column.sequence,
+                        sequence__lte=update_sequence
+                    ).order_by('sequence')
+
+                    # 순회하면서 순서값들을 1씩 감소
+                    for column in after_target_columns:
+                        column.sequence -= 1
+                        column.save()
+
+                    # 순서를 변경할 컬럼의 순서를 변경하고자 했던 순서로 변경
+                    target_column.sequence = update_sequence
+                    target_column.save()
+        except DatabaseError as error:
+            return Response(
+                {'data': f'{error}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # 데이터 직렬화
+        serializer = BoardSerializer(own_board)
+
+        return Response(
+            {'data': serializer.data},
+            status=status.HTTP_200_OK
+        )
 
 
 # /api/v1/boards/board/list/
@@ -131,9 +256,9 @@ class BoardListView(APIView):
         operation_description='현재 사용자의 소속 팀이 소유한 보드와 관련된 데이터를 제공합니다.',
         tags=['보드', '컬럼', '목록'],
         responses={
-            200: '정상적으로 요청이 처리되었습니다.',
-            401: '인증 오류, 인증되지 않은 사용자입니다.',
-            403: '권한 오류, 팀에 소속된 구성원만이 자신이 소속한 팀의 보드를 확인할 수 있습니다.'
+            200: SUCCESS_MESSAGE_200,
+            401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403
         }
     )
     def get(self, request):

@@ -404,7 +404,7 @@ class UserInviteAcceptTestCase(APITestCase):
         response = self.client.post(self.url)
 
         self.assertEqual(
-            response.status_code, status.HTTP_202_ACCEPTED, response.data
+            response.status_code, status.HTTP_200_OK, response.data
         )
 
     # 받아들일 팀 초대 메시지가 없는 케이스
@@ -453,9 +453,9 @@ class UserInviteAcceptTestCase(APITestCase):
         response = self.client.post(self.url)
 
         # 사용자에게서 기존 팀 그룹을 삭제하고 새 팀 그룹을 추가하게 되므로
-        # 상태 코드는 202
+        # 상태 코드는 200
         self.assertEqual(
-            response.status_code, status.HTTP_202_ACCEPTED, response.data
+            response.status_code, status.HTTP_200_OK, response.data
         )
 
     # 사용자가 인증 되지 않은 케이스

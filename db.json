@@ -768,6 +768,39 @@
         }
     },
     {
+        "model": "token_blacklist.outstandingtoken",
+        "pk": 27,
+        "fields": {
+            "user": 1,
+            "jti": "d0ebff06e2e04ec89871dfe3aa3c3d0a",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcwMTUyMDk0MywiaWF0IjoxNzAwMzExMzQzLCJqdGkiOiJkMGViZmYwNmUyZTA0ZWM4OTg3MWRmZTNhYTNjM2QwYSIsInVzZXJfaWQiOjF9.8Mcydq2y4r_teH3tVFxdiApFtoBeMS_ta96lgEAAMWI",
+            "created_at": "2023-11-18T12:42:23.346Z",
+            "expires_at": "2023-12-02T12:42:23Z"
+        }
+    },
+    {
+        "model": "token_blacklist.outstandingtoken",
+        "pk": 28,
+        "fields": {
+            "user": 1,
+            "jti": "72bb5a40a281413284f41a7a08e337d0",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcwMTUyNjE2MywiaWF0IjoxNzAwMzE2NTYzLCJqdGkiOiI3MmJiNWE0MGEyODE0MTMyODRmNDFhN2EwOGUzMzdkMCIsInVzZXJfaWQiOjF9.3lArxT-04_ZwClhcxxXMZqeD5uod2rILMlAKMupQZKA",
+            "created_at": "2023-11-18T14:09:23.918Z",
+            "expires_at": "2023-12-02T14:09:23Z"
+        }
+    },
+    {
+        "model": "token_blacklist.outstandingtoken",
+        "pk": 29,
+        "fields": {
+            "user": 1,
+            "jti": "1c692b2a4cf74291814baa97c29ad700",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcwMTUzMzE5NSwiaWF0IjoxNzAwMzIzNTk1LCJqdGkiOiIxYzY5MmIyYTRjZjc0MjkxODE0YmFhOTdjMjlhZDcwMCIsInVzZXJfaWQiOjF9.w1jBkJtwXt7TuuUu5JwQWl7Pi3z-Oa2CrvU5-watYr4",
+            "created_at": "2023-11-18T16:06:35.645Z",
+            "expires_at": "2023-12-02T16:06:35Z"
+        }
+    },
+    {
         "model": "token_blacklist.blacklistedtoken",
         "pk": 1,
         "fields": { "token": 1, "blacklisted_at": "2023-11-18T10:42:48.250Z" }
@@ -886,6 +919,11 @@
         "model": "token_blacklist.blacklistedtoken",
         "pk": 24,
         "fields": { "token": 24, "blacklisted_at": "2023-11-18T11:14:02.735Z" }
+    },
+    {
+        "model": "token_blacklist.blacklistedtoken",
+        "pk": 25,
+        "fields": { "token": 27, "blacklisted_at": "2023-11-18T12:43:24.654Z" }
     },
     {
         "model": "users.user",
@@ -1121,7 +1159,7 @@
     {
         "model": "boards.column",
         "pk": 4,
-        "fields": { "board": 2, "title": "Backlog", "sequence": 1 }
+        "fields": { "board": 2, "title": "Backlog", "sequence": 2 }
     },
     {
         "model": "boards.column",
@@ -1132,5 +1170,10 @@
         "model": "boards.column",
         "pk": 6,
         "fields": { "board": 2, "title": "Review", "sequence": 3 }
+    },
+    {
+        "model": "boards.column",
+        "pk": 7,
+        "fields": { "board": 1, "title": "Extra", "sequence": 4 }
     }
 ]
