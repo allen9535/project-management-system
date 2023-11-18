@@ -12,6 +12,7 @@ from drf_yasg.utils import swagger_auto_schema
 
 from users.models import User
 from users.serializers import UserSerializer
+from boards.models import Board
 from .models import Team
 from .serializers import TeamCreateSerializer
 from .permissions import CanInviteTeamPermission
@@ -51,22 +52,31 @@ class TeamCreateView(APIView):
 
         serializer = TeamCreateSerializer(data=team_data)
         if serializer.is_valid():
-            # get_or_create는 튜플 형태로
-            # (생성되거나 가져온 객체, 생성 여부) 를 반환한다
-            # 생성되거나 가져온 객체 사용
-            leader_group = Group.objects.get_or_create(name='leader')[0]
-
             try:
                 # 트랜잭션으로 관리
-                # 그룹 만들기 + 사용자에게 그룹 할당하기 + 팀 생성하기를 묶었음
+                # 팀 생성 + 그룹 생성 + 사용자에게 그룹 할당 + 보드 생성을 묶었음
                 # 하나라도 문제가 발생하면 전부 롤백
                 with transaction.atomic():
+                    # get_or_create는 튜플 형태로 (생성되거나 가져온 객체, 생성 여부) 를 반환한다
+                    # 생성되거나 가져온 객체 사용
+                    leader_group = Group.objects.get_or_create(
+                        name='leader'
+                    )[0]
+                    # 팀을 그룹 형태로 생성
                     team_group = Group.objects.create(name=team_name)
 
-                    user.groups.add(team_group)
+                    # 팀 생성자를 팀장 그룹에 등록
                     user.groups.add(leader_group)
+                    # 팀 생성자를 팀 그룹에 등록
+                    user.groups.add(team_group)
 
+                    # 팀 저장
                     serializer.save()
+
+                    # 작업 보드 생성
+                    Board.objects.create(
+                        team=Team.objects.get(name=serializer.data.get('name'))
+                    )
             # 위 과정 처리 중 오류 발생을 대비한 예외처리
             except DatabaseError as error:
                 return Response(
