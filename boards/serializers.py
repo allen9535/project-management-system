@@ -35,15 +35,17 @@ class BoardSerializer(serializers.ModelSerializer):
         # {
         #    'team': '팀명',
         #    'column': {
-        #       '컬럼명': 순서,
-        #       '컬럼명': 순서,
+        #       '컬럼명': {
+        #           'id': 컬럼 id,
+        #           'sequence': 컬럼 순서
+        #       }
         #        ...
         #     }
         # }
         column_data = {}
         for column in columns:
-            column_data[column.id] = {
-                'title': column.title,
+            column_data[column.title] = {
+                'id': column.id,
                 'sequence': column.sequence
             }
 
