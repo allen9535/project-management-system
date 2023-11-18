@@ -1,6 +1,8 @@
 from rest_framework.permissions import BasePermission
 
 
+# 팀 초대 기능은 팀장만 가능하므로
+# 관련 권한 정의
 class CanInviteTeamPermission(BasePermission):
     def has_permission(self, request, view):
         # 사용자 가져오기
