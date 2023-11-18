@@ -44,7 +44,7 @@ class ColumnCreateView(APIView):
             # 순서 필드를 내림차순으로 정렬하면 첫번째 객체의 순서는 가장 마지막 순서가 됨
             last_sequence = Column.objects.filter(
                 board=board
-            ).order_by('-sequence').first().sequence
+            ).order_by('-sequence').first().sequence + 1
         except AttributeError:
             # 보드 내부에 컬럼이 없다면 순서를 1번으로 설정
             last_sequence = 1
