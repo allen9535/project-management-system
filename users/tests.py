@@ -30,11 +30,11 @@ class UserRegisterTestCase(APITestCase):
         # 정상적으로 회원가입에 성공하면 상태 코드 201을 반환하므로
         # 만약 상태 코드가 201이 아니라면 의도한대로 작동하지 않는 것
         # 의도하지 않은 동작이 발생하면 관련 내용을 콘솔창에 출력
-        if response.status_code != 201:
-            print(response.data)
 
         # API 호출에 대한 응답으로 받은 상태 코드가 201인지 아닌지 확인
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            response.status_code, status.HTTP_201_CREATED, response.data
+        )
 
     # 계정명을 입력하지 않은 케이스
     def test_no_username(self):
@@ -45,10 +45,9 @@ class UserRegisterTestCase(APITestCase):
 
         response = self.client.post(self.url, user_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 비밀번호를 입력하지 않은 케이스
     def test_no_password(self):
@@ -59,10 +58,9 @@ class UserRegisterTestCase(APITestCase):
 
         response = self.client.post(self.url, user_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 계정명과 비밀번호를 모두 입력하지 않은 케이스
     def test_no_data(self):
@@ -70,10 +68,9 @@ class UserRegisterTestCase(APITestCase):
 
         response = self.client.post(self.url, user_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 계정명에 유효하지 않은 값을 입력하는 케이스(5자 미만)
     def test_invalid_username_lt_5(self):
@@ -85,10 +82,9 @@ class UserRegisterTestCase(APITestCase):
 
         response = self.client.post(self.url, user_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 계정명에 유효하지 않은 값을 입력하는 케이스(20자 초과)
     def test_invalid_username_gt_20(self):
@@ -100,10 +96,9 @@ class UserRegisterTestCase(APITestCase):
 
         response = self.client.post(self.url, user_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 계정명에 유효하지 않은 값을 입력하는 케이스(이미 존재하는 계정명)
     def test_invalid_username_already_exists(self):
@@ -115,10 +110,9 @@ class UserRegisterTestCase(APITestCase):
 
         response = self.client.post(self.url, user_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 비밀번호에 유효하지 않은 값을 입력하는 케이스(5자 미만)
     def test_invalid_password_lt_5(self):
@@ -130,10 +124,9 @@ class UserRegisterTestCase(APITestCase):
 
         response = self.client.post(self.url, user_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 비밀번호에 유효하지 않은 값을 입력하는 케이스(20자 초과)
     def test_invalid_password_gt_20(self):
@@ -145,10 +138,9 @@ class UserRegisterTestCase(APITestCase):
 
         response = self.client.post(self.url, user_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 사용자 모델에 있는 필드이지만,
     # 회원가입 시나리오에서 입력받지 않는 값을 입력한 경우
@@ -163,13 +155,12 @@ class UserRegisterTestCase(APITestCase):
 
         response = self.client.post(self.url, user_data)
 
-        if response.status_code != 201:
-            print(response.data)
-
         # 하지만 에러는 발생하지 않음
         # 계정명과 비밀번호를 입력했다면 계정은 생성됨
         # 별도의 값은 입력되지 않음
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            response.status_code, status.HTTP_201_CREATED, response.data
+        )
 
 
 class LoginTestCase(APITestCase):
@@ -194,10 +185,9 @@ class LoginTestCase(APITestCase):
 
         response = self.client.post(self.url, login_data)
 
-        if response.status_code != 200:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
 
     # 계정명을 입력하지 않는 경우
     def test_no_username(self):
@@ -207,10 +197,9 @@ class LoginTestCase(APITestCase):
 
         response = self.client.post(self.url, login_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 비밀번호를 입력하지 않는 경우
     def test_no_username(self):
@@ -220,10 +209,9 @@ class LoginTestCase(APITestCase):
 
         response = self.client.post(self.url, login_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 계정명과 비밀번호를 모두 입력하지 않는 경우
     def test_no_data(self):
@@ -231,10 +219,9 @@ class LoginTestCase(APITestCase):
 
         response = self.client.post(self.url, login_data)
 
-        if response.status_code != 400:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
 
     # 잘못된 계정명을 입력한 경우
     def test_invalid_username(self):
@@ -245,10 +232,9 @@ class LoginTestCase(APITestCase):
 
         response = self.client.post(self.url, login_data)
 
-        if response.status_code != 404:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
 
     # 잘못된 비밀번호를 입력한 경우
     def test_invalid_password(self):
@@ -259,10 +245,9 @@ class LoginTestCase(APITestCase):
 
         response = self.client.post(self.url, login_data)
 
-        if response.status_code != 404:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
 
 
 # 로그아웃 기능은 대개 토큰을 다루는 기능이므로 테스트가 어려움
@@ -302,20 +287,18 @@ class LogoutTestCase(APITestCase):
 
         response = self.client.post(self.url)
 
-        if response.status_code != 200:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
 
     # 로그인하지 않은 상태에서의 로그아웃
     def test_logout_without_login(self):
         response = self.client.post(self.url)
 
         # 인증되지 않은 사용자이므로 상태코드 401이 반환됨
-        if response.status_code != 401:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data
+        )
 
 
 # 사용자가 자신에게 온 팀 초대 메시지를 확인하는 것에 대한 테스트
@@ -349,10 +332,9 @@ class UserInviteReadTestCase(APITestCase):
         # URL로 GET 요청
         response = self.client.get(self.url)
 
-        if response.status_code != 200:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
 
     # 팀 초대 메시지가 없는 케이스
     def test_message_not_exist(self):
@@ -374,10 +356,9 @@ class UserInviteReadTestCase(APITestCase):
         # URL로 GET 요청
         response = self.client.get(self.url)
 
-        if response.status_code != 204:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(
+            response.status_code, status.HTTP_204_NO_CONTENT, response.data
+        )
 
     # 사용자가 인증 되지 않은 케이스
     def test_not_authenticated(self):
@@ -386,10 +367,9 @@ class UserInviteReadTestCase(APITestCase):
         # URL로 GET 요청
         response = self.client.get(self.url)
 
-        if response.status_code != 401:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data
+        )
 
 
 # 사용자가 자신에게 온 팀 초대 메시지를 수락하는 것에 대한 테스트
@@ -423,10 +403,9 @@ class UserInviteAcceptTestCase(APITestCase):
         # URL로 POST 요청
         response = self.client.post(self.url)
 
-        if response.status_code != 202:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(
+            response.status_code, status.HTTP_202_ACCEPTED, response.data
+        )
 
     # 받아들일 팀 초대 메시지가 없는 케이스
     def test_message_not_exist(self):
@@ -448,10 +427,9 @@ class UserInviteAcceptTestCase(APITestCase):
         # URL로 POST 요청
         response = self.client.post(self.url)
 
-        if response.status_code != 204:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(
+            response.status_code, status.HTTP_204_NO_CONTENT, response.data
+        )
 
     # 이미 참여한 팀이 있는 케이스
     def test_invite_team_exist(self):
@@ -476,10 +454,9 @@ class UserInviteAcceptTestCase(APITestCase):
 
         # 사용자에게서 기존 팀 그룹을 삭제하고 새 팀 그룹을 추가하게 되므로
         # 상태 코드는 202
-        if response.status_code != 202:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(
+            response.status_code, status.HTTP_202_ACCEPTED, response.data
+        )
 
     # 사용자가 인증 되지 않은 케이스
     def test_not_authenticated(self):
@@ -488,7 +465,6 @@ class UserInviteAcceptTestCase(APITestCase):
         # URL로 POST 요청
         response = self.client.post(self.url)
 
-        if response.status_code != 401:
-            print(response.data)
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data
+        )

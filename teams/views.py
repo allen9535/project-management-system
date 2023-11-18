@@ -10,19 +10,19 @@ from django.db import transaction, DatabaseError
 
 from drf_yasg.utils import swagger_auto_schema
 
+from config.permissions import IsTeamLeader
 from users.models import User
 from users.serializers import UserSerializer
 from boards.models import Board
 from .models import Team
 from .serializers import TeamCreateSerializer
-from .permissions import CanInviteTeamPermission
 
 from swagger import TEAM_CREATE_PARAMETERS, TEAM_INVITE_PARAMETERS
 
 
 # /api/v1/teams/create/
 class TeamCreateView(APIView):
-    # 인증된 사용자, 팀 생성 가능자(리더가 아닌 사용자)에게만 권한 부여
+    # 인증된 사용자에게만 권한 부여
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -62,10 +62,33 @@ class TeamCreateView(APIView):
                     leader_group = Group.objects.get_or_create(
                         name='leader'
                     )[0]
+
+                    # 기존에 다른 팀에 속해 있었는지 체크
+                    is_team_mate = user.groups.exclude(name='leader').exists()
+                    # 기존에 다른 팀의 팀장이었는지 체크
+                    is_leader = user.groups.filter(name='leader').exists()
+                    # 기존에 다른 팀의 팀장이었다면
+                    if is_leader:
+                        # 그 사용자의 기존 팀 그룹을 찾아서 해제
+                        past_team = user.groups.exclude(name='leader').first()
+                        user.groups.remove(past_team)
+
+                        # 기존 팀의 가장 연장자에게(회원 가입일이 오래된 사용자에게) 팀장 권한 인계
+                        past_team_senior = User.objects.filter(
+                            groups__name=past_team.name
+                        ).order_by('-date_joined').first()
+                        past_team_senior.groups.add(leader_group)
+                    # 팀장은 아니지만 다른 팀의 팀원이었다면
+                    elif (is_leader is False) and (is_team_mate is True):
+                        # 그 사용자의 기존 팀 그룹을 찾아서 해제
+                        past_team = user.groups.exclude(name='leader').first()
+                        user.groups.remove(past_team)
+
                     # 팀을 그룹 형태로 생성
                     team_group = Group.objects.create(name=team_name)
 
                     # 팀 생성자를 팀장 그룹에 등록
+                    # 기존에 팀장이었다면 변화 없음
                     user.groups.add(leader_group)
                     # 팀 생성자를 팀 그룹에 등록
                     user.groups.add(team_group)
@@ -95,7 +118,7 @@ class TeamCreateView(APIView):
 # /api/v1/teams/invite/
 class TeamInviteView(APIView):
     # 인증된 사용자, 팀원 초대 가능자(해당 팀의 팀장)에게만 권한 부여
-    permission_classes = [IsAuthenticated, CanInviteTeamPermission]
+    permission_classes = [IsAuthenticated, IsTeamLeader]
 
     @swagger_auto_schema(
         operation_id='팀 초대',
@@ -115,9 +138,10 @@ class TeamInviteView(APIView):
 
         try:
             # 초대할 팀 객체
-            # 현재 로그인한 사용자가 팀장으로 있는 팀인지 아닌지는
-            # 권한 레벨에서 판단중(CanInviteTeamPermission)
-            invite_team = Team.objects.get(name=request.data.get('team'))
+            # 현재 로그인한 사용자가 팀장으로 있는 팀인지 아닌지는 권한 레벨에서 판단중
+            invite_team = Team.objects.get(
+                name=user.groups.exclude(name='leader').first().name
+            )
 
             # 초대할 대상 객체
             target_user = User.objects.get(
