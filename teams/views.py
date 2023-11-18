@@ -94,7 +94,7 @@ class TeamCreateView(APIView):
 
 # /api/v1/teams/invite/
 class TeamInviteView(APIView):
-    # 인증된 사용자, 팀원 초대 가능자(팀장)에게만 권한 부여
+    # 인증된 사용자, 팀원 초대 가능자(해당 팀의 팀장)에게만 권한 부여
     permission_classes = [IsAuthenticated, CanInviteTeamPermission]
 
     @swagger_auto_schema(
@@ -105,7 +105,7 @@ class TeamInviteView(APIView):
         responses={
             200: '성공적으로 작업을 완료했습니다.',
             401: '로그인 후 사용해주세요.',
-            403: '팀 초대는 팀장만 가능합니다.',
+            403: '팀 초대는 해당 팀의 팀장만 가능합니다.',
             404: '해당하는 사용자나 팀을 찾을 수 없습니다. 입력값을 다시 확인해주세요.',
             423: '해당 사용자는 초대 가능한 상태가 아닙니다.'
         }
@@ -114,11 +114,15 @@ class TeamInviteView(APIView):
         user = request.user
 
         try:
+            # 초대할 팀 객체
+            # 현재 로그인한 사용자가 팀장으로 있는 팀인지 아닌지는
+            # 권한 레벨에서 판단중(CanInviteTeamPermission)
+            invite_team = Team.objects.get(name=request.data.get('team'))
+
+            # 초대할 대상 객체
             target_user = User.objects.get(
                 username=request.data.get('target')
             )
-
-            invite_team = Team.objects.get(name=request.data.get('team'))
         except ObjectDoesNotExist as error:
             return Response(
                 {
@@ -126,12 +130,14 @@ class TeamInviteView(APIView):
                 }, status=status.HTTP_404_NOT_FOUND
             )
 
+        # 초대할 대상이 이미 초대 메시지를 받은 상황
         if target_user.message is not None:
             return Response(
                 {
                     'data': '해당 사용자는 이미 초대를 받고 있습니다.'
                 }, status=status.HTTP_423_LOCKED
             )
+        # 초대할 대상이 팀장인 상황
         elif target_user.groups.filter(name='leader').exists():
             return Response(
                 {
@@ -139,6 +145,8 @@ class TeamInviteView(APIView):
                 }, status=status.HTTP_423_LOCKED
             )
 
+        # users 앱에서 초대 메시지를 분석해 팀에 가입할 수 있도록
+        # 정해진 양식으로 메시지 작성
         invite_message = {
             'message': f'team:{invite_team.name},from:{user.username}'
         }

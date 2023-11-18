@@ -331,9 +331,9 @@ class UserInviteReadTestCase(APITestCase):
 
     # 팀 초대 메시지가 있는 케이스
     def test_message_exist(self):
-        # 기존 DB의 사용자 중 팀 초대를 받은 팀장이 아닌 사용자로 로그인
+        # 기존 DB의 사용자 중 팀 초대를 받은 / 팀장이 아닌 사용자로 로그인
         login_data = {
-            'username': 'normaluser1',
+            'username': 'normaluser5',
             'password': 'qwerty123!@#'
         }
 
@@ -405,9 +405,9 @@ class UserInviteAcceptTestCase(APITestCase):
 
     # 받아들일 팀 초대 메시지가 있는 케이스
     def test_default(self):
-        # 기존 DB의 사용자 중 팀 초대를 받은 팀장이 아닌 사용자로 로그인
+        # 기존 DB의 사용자 중 팀 초대를 받은, 팀장이 아닌 사용자로 로그인
         login_data = {
-            'username': 'normaluser1',
+            'username': 'normaluser5',
             'password': 'qwerty123!@#'
         }
 

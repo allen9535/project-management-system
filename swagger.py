@@ -31,3 +31,11 @@ TEAM_INVITE_PARAMETERS = openapi.Schema(
         'team': openapi.Schema(type=openapi.TYPE_STRING, description='초대하는 팀명')
     }
 )
+
+COLUMN_CREATE_PARAMETER = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'team': openapi.Schema(type=openapi.TYPE_STRING, description='팀명'),
+        'title': openapi.Schema(type=openapi.TYPE_STRING, description='컬럼 제목')
+    }
+)

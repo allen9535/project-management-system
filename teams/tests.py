@@ -134,7 +134,7 @@ class TeamInviteTestCase(APITestCase):
         # APIClient 객체에 인증 진행
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
 
-        #  타켓 사용자 미입력
+        #  타겟 사용자 미입력
         request_data = {
             'team': '첫번째팀',
         }
@@ -194,7 +194,7 @@ class TeamInviteTestCase(APITestCase):
 
         # 이미 초대된 사용자를 초대
         request_data = {
-            'target': 'normaluser1',
+            'target': 'normaluser5',
             'team': '첫번째팀',
         }
 
