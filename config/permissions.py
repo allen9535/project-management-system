@@ -8,9 +8,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from teams.models import Team
 
 
-# 컬럼 생성은 해당 팀의 팀장만 가능함
-# 관련 권한 정의
-class CanCreateColumn(BasePermission):
+# 팀장에게 권한을 부여
+class IsTeamLeader(BasePermission):
     def has_permission(self, request, view):
         # 사용자 가져오기
         user = request.user
@@ -18,20 +17,19 @@ class CanCreateColumn(BasePermission):
         try:
             # 팀 가져오기
             team = Team.objects.get(
-                name=request.data.get('team')
+                name=user.groups.exclude(name='leader').first().name
             )
-        # 만약 팀명을 입력하지 않은 상황이라면 상태 코드 반환
+        # 만약 팀에 소속되지 않은 상황이라면 상태 코드 반환
         except ObjectDoesNotExist as error:
             return Response({'data': f'{error}'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 해당 팀의 팀장만 컬럼 생성 가능
+        # 해당 팀의 팀장만 초대 가능
         # 해당 팀의 팀장이다 → True / 그 외 → False
         return (user.groups.filter(name='leader').exists()) and (team.leader == user)
 
 
-# 보드 목록 확인은 팀장과 팀원만 가능함
-# 관련 권한 정의
-class CanReadBoardList(BasePermission):
+# 팀의 구성원 전체에 권한을 부여
+class IsTeamMember(BasePermission):
     def has_permission(self, request, view):
         user = request.user
 

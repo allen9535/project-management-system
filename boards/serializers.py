@@ -42,6 +42,9 @@ class BoardSerializer(serializers.ModelSerializer):
         # }
         column_data = {}
         for column in columns:
-            column_data[column.title] = column.sequence
+            column_data[column.id] = {
+                'title': column.title,
+                'sequence': column.sequence
+            }
 
         return column_data
