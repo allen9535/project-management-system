@@ -251,6 +251,18 @@ class ColumnDeleteView(APIView):
     # 인증된 사용자, 팀장에 권한 부여
     permission_classes = [IsAuthenticated, IsTeamLeader]
 
+    @swagger_auto_schema(
+        operation_id='컬럼 삭제',
+        operation_description='컬럼 id를 입력받아 해당 컬럼을 삭제합니다.',
+        tags=['컬럼', '삭제'],
+        request_body=COLUMN_DELETE_PARAMETER,
+        responses={
+            200: SUCCESS_MESSAGE_200,
+            401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403,
+            404: ERROR_MESSAGE_404
+        }
+    )
     def delete(self, request):
         user = request.user
 

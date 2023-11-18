@@ -396,6 +396,42 @@
         }
     },
     {
+        "model": "auth.permission",
+        "pk": 45,
+        "fields": {
+            "name": "Can add ticket",
+            "content_type": 12,
+            "codename": "add_ticket"
+        }
+    },
+    {
+        "model": "auth.permission",
+        "pk": 46,
+        "fields": {
+            "name": "Can change ticket",
+            "content_type": 12,
+            "codename": "change_ticket"
+        }
+    },
+    {
+        "model": "auth.permission",
+        "pk": 47,
+        "fields": {
+            "name": "Can delete ticket",
+            "content_type": 12,
+            "codename": "delete_ticket"
+        }
+    },
+    {
+        "model": "auth.permission",
+        "pk": 48,
+        "fields": {
+            "name": "Can view ticket",
+            "content_type": 12,
+            "codename": "view_ticket"
+        }
+    },
+    {
         "model": "auth.group",
         "pk": 1,
         "fields": { "name": "leader", "permissions": [] }
@@ -480,6 +516,11 @@
         "model": "contenttypes.contenttype",
         "pk": 11,
         "fields": { "app_label": "boards", "model": "column" }
+    },
+    {
+        "model": "contenttypes.contenttype",
+        "pk": 12,
+        "fields": { "app_label": "boards", "model": "ticket" }
     },
     {
         "model": "token_blacklist.outstandingtoken",
@@ -798,6 +839,17 @@
             "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcwMTUzMzE5NSwiaWF0IjoxNzAwMzIzNTk1LCJqdGkiOiIxYzY5MmIyYTRjZjc0MjkxODE0YmFhOTdjMjlhZDcwMCIsInVzZXJfaWQiOjF9.w1jBkJtwXt7TuuUu5JwQWl7Pi3z-Oa2CrvU5-watYr4",
             "created_at": "2023-11-18T16:06:35.645Z",
             "expires_at": "2023-12-02T16:06:35Z"
+        }
+    },
+    {
+        "model": "token_blacklist.outstandingtoken",
+        "pk": 30,
+        "fields": {
+            "user": 1,
+            "jti": "419be700c48742068440e4e0f0b2bbfa",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcwMTU1ODcxMSwiaWF0IjoxNzAwMzQ5MTExLCJqdGkiOiI0MTliZTcwMGM0ODc0MjA2ODQ0MGU0ZTBmMGIyYmJmYSIsInVzZXJfaWQiOjF9.xOngZT_NNvhFr4LdPScT45sRmDEBpyRE6JgcVHupdXM",
+            "created_at": "2023-11-18T23:11:51.272Z",
+            "expires_at": "2023-12-02T23:11:51Z"
         }
     },
     {
@@ -1159,7 +1211,7 @@
     {
         "model": "boards.column",
         "pk": 4,
-        "fields": { "board": 2, "title": "Backlog", "sequence": 2 }
+        "fields": { "board": 2, "title": "Backlog", "sequence": 1 }
     },
     {
         "model": "boards.column",
@@ -1170,10 +1222,5 @@
         "model": "boards.column",
         "pk": 6,
         "fields": { "board": 2, "title": "Review", "sequence": 3 }
-    },
-    {
-        "model": "boards.column",
-        "pk": 7,
-        "fields": { "board": 1, "title": "Extra", "sequence": 4 }
     }
 ]
