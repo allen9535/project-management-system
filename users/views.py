@@ -15,7 +15,7 @@ from django.db import transaction, DatabaseError
 from drf_yasg.utils import swagger_auto_schema
 
 from .serializers import RegisterSerializer
-from swagger import USER_REGISTER_PARAMETERS, LOGIN_PARAMETERS
+from swagger import *
 
 
 # /api/v1/users/register/
@@ -26,8 +26,8 @@ class UserRegisterView(APIView):
         tags=['사용자', '생성', '인증'],
         request_body=USER_REGISTER_PARAMETERS,
         responses={
-            201: '정상적으로 회원가입이 완료되었습니다.',
-            400: '회원가입에 실패했습니다. 입력된 값이 잘못되었습니다. 상세한 내용은 에러 메시지를 확인해주세요.'
+            201: SUCCESS_MESSAGE_201,
+            400: ERROR_MESSAGE_400
         }
     )
     def post(self, request):
@@ -52,9 +52,9 @@ class LoginView(APIView):
         tags=['사용자', '로그인', '인증'],
         request_body=LOGIN_PARAMETERS,
         responses={
-            200: '정상적으로 로그인이 완료되었습니다.',
-            400: '로그인에 실패했습니다. 필수값이 입력되지 않았습니다.',
-            404: '로그인에 실패했습니다. 해당하는 사용자를 찾지 못했습니다.'
+            200: SUCCESS_MESSAGE_200,
+            400: ERROR_MESSAGE_400,
+            404: ERROR_MESSAGE_404
         }
     )
     def post(self, request):
@@ -94,9 +94,8 @@ class LogoutView(APIView):
         operation_description='액세스 토큰을 통해 캐시에 저장된 리프레시 토큰을 블랙리스트에 등록하여 재사용을 막습니다. 액세스 토큰 삭제는 이루어지지 않습니다.',
         tags=['사용자', '로그아웃', '인증'],
         responses={
-            200: '정상적으로 로그아웃이 완료되었습니다.',
-            202: '로그아웃은 성공했습니다. 그러나 정상적으로 로그아웃이 처리되지 않았을 수 있습니다. 에러 메시지를 확인해주세요.',
-            401: '인증되지 않은 사용자는 사용할 수 없습니다.'
+            200: SUCCESS_MESSAGE_200,
+            401: ERROR_MESSAGE_401
         }
     )
     def post(self, request):
@@ -109,7 +108,7 @@ class LogoutView(APIView):
         refresh_token = cache.get(f'{access_token}')
 
         if refresh_token is None:
-            return Response({'data': '로그아웃이 완료되었습니다. 그러나 리프레시 토큰이 정상적으로 처리되지 않았을 수 있습니다.'}, status=status.HTTP_202_ACCEPTED)
+            return Response({'data': '로그아웃이 완료되었습니다. 그러나 리프레시 토큰이 정상적으로 처리되지 않았을 수 있습니다.'}, status=status.HTTP_200_OK)
 
         try:
             # 리프레시 토큰을 문자열에서 리프레시 토큰 객체로 형변환
@@ -123,7 +122,7 @@ class LogoutView(APIView):
             return Response({'data': '로그아웃이 완료되었습니다.'}, status=status.HTTP_200_OK)
         # 리프레시 토큰 처리 중 발생할 수 있는 예외를 처리
         except (InvalidToken, TokenError) as error:
-            return Response({'data': f'{error}'}, status=status.HTTP_202_ACCEPTED)
+            return Response({'data': f'{error}'}, status=status.HTTP_200_OK)
 
 
 # /api/v1/users/invite/
@@ -135,9 +134,9 @@ class UserInviteDetailView(APIView):
         operation_description='사용자에게 온 초대 메시지를 확인합니다.',
         tags=['사용자', '팀', '초대'],
         responses={
-            200: '사용자에게 온 초대 메시지 검색이 성공적으로 완료되었습니다.',
-            204: '사용자에게 온 초대 메시지가 없습니다.',
-            401: '인증되지 않은 사용자는 사용할 수 없습니다.'
+            200: SUCCESS_MESSAGE_200,
+            204: SUCCESS_MESSAGE_204,
+            401: ERROR_MESSAGE_401
         }
     )
     def get(self, request):
@@ -174,10 +173,10 @@ class UserInviteAcceptView(APIView):
         operation_description='사용자에게 온 초대 메시지를 수락합니다.',
         tags=['사용자', '팀', '초대'],
         responses={
-            202: '초대 메시지 수락이 성공적으로 완료되었습니다.',
-            204: '사용자에게 온 초대 메시지가 없습니다.',
-            401: '인증되지 않은 사용자는 사용할 수 없습니다.',
-            500: '요청을 처리하던 중 서버에 문제가 발생했습니다.'
+            200: SUCCESS_MESSAGE_200,
+            204: SUCCESS_MESSAGE_204,
+            401: ERROR_MESSAGE_401,
+            500: ERROR_MESSAGE_500
         }
     )
     def post(self, request):
@@ -226,5 +225,5 @@ class UserInviteAcceptView(APIView):
             )
 
         return Response(
-            {'data': f'{team_name} 팀의 초대를 수락하셨습니다.'}, status=status.HTTP_202_ACCEPTED
+            {'data': f'{team_name} 팀의 초대를 수락하셨습니다.'}, status=status.HTTP_200_OK
         )

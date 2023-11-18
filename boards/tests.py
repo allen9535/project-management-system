@@ -151,7 +151,7 @@ class ColumnUpdateTestCase(APITestCase):
         response = self.client.put(self.url, request_data)
 
         self.assertEqual(
-            response.status_code, status.HTTP_202_ACCEPTED, response.data
+            response.status_code, status.HTTP_200_OK, response.data
         )
 
     # 컬럼 id 없이 수정을 시도하는 케이스
@@ -207,7 +207,7 @@ class ColumnUpdateTestCase(APITestCase):
         response = self.client.put(self.url, request_data)
 
         self.assertEqual(
-            response.status_code, status.HTTP_202_ACCEPTED, response.data
+            response.status_code, status.HTTP_200_OK, response.data
         )
 
     # 수정할 데이터 없이 수정을 시도하는 케이스
@@ -365,6 +365,291 @@ class ColumnUpdateTestCase(APITestCase):
         response = self.client.put(self.url, request_data)
 
         # 인증된 사용자에게 권한을 부여하므로, 인증되지 않으면 사용 불가
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data
+        )
+
+
+# 컬럼 순서 수정 테스트
+class ColumnSequenceUpdateTestCase(APITestCase):
+    fixtures = ['db.json']
+
+    def setUp(self):
+        # APIClient 객체 생성
+        self.client = APIClient()
+
+        # /api/v1/boards/column/update/sequence/
+        self.url = reverse('column_sequence_update')
+
+    # 컬럼 순서가 기존보다 뒤로 가는 케이스
+    def test_sequence_right(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 순서 수정에 필요한 데이터 생성
+        request_data = {
+            'column': 1,
+            'sequence': 3
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
+
+    # 컬럼 순서가 기존보다 앞으로 가는 케이스
+    def test_sequence_left(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 순서 수정에 필요한 데이터 생성
+        request_data = {
+            'column': 3,
+            'sequence': 2
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
+
+    # 원래 값을 변경 값으로 받은 케이스
+    def test_sequence_stand(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 순서 수정에 필요한 데이터 생성
+        request_data = {
+            'column': 2,
+            'sequence': 2
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        # 값이 변할 건 없으므로 상태코드 200
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
+
+    # 유효하지 않은 컬럼 id 값을 받은 케이스
+    def test_invalid_column(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 순서 수정에 필요한 데이터 생성
+        request_data = {
+            'column': 'INVALID',
+            'sequence': 2
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
+
+    # 유효하지 않은 변경 값을 받은 케이스
+    def test_invalid_sequence(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 순서 수정에 필요한 데이터 생성
+        request_data = {
+            'column': 1,
+            'sequence': 'INVALID'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
+
+    # 0 이하의 순서값을 받은 케이스
+    def test_sequence_under_0(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 순서 수정에 필요한 데이터 생성
+        request_data = {
+            'column': 1,
+            'sequence': 0
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
+
+    # 현재 보드 내 컬럼 갯수보다 큰 순서값을 받은 케이스
+    def test_sequence_over_len(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 순서 수정에 필요한 데이터 생성
+        request_data = {
+            'column': 1,
+            'sequence': 100
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
+
+    # 입력값이 없는 케이스
+    def test_sequence_no_data(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 데이터가 없음
+        request_data = {}
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
+
+    # 권한이 없는(소속된 팀이 없는) 케이스
+    def test_no_permission(self):
+        # 기존 DB의 사용자 중 팀이 없는 사용자로 로그인 시도
+        login_data = {
+            'username': 'normaluser4',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 순서 수정에 필요한 데이터 생성
+        request_data = {
+            'column': 1,
+            'sequence': 3
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_403_FORBIDDEN, response.data
+        )
+
+    # 인증이 없는(로그인이 되지 않은) 케이스
+    def test_no_authorize(self):
+        # 컬럼 순서 수정에 필요한 데이터 생성
+        request_data = {
+            'column': 1,
+            'sequence': 3
+        }
+
+        response = self.client.put(self.url, request_data)
+
         self.assertEqual(
             response.status_code, status.HTTP_401_UNAUTHORIZED, response.data
         )
