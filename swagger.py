@@ -65,3 +65,10 @@ COLUMN_UPDATE_SEQUENCE_PARAMETER = openapi.Schema(
         'sequence': openapi.Schema(type=openapi.TYPE_STRING, description='컬럼 순서')
     }
 )
+
+COLUMN_DELETE_PARAMETER = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'column': openapi.Schema(type=openapi.TYPE_INTEGER, description='컬럼 id')
+    }
+)
