@@ -655,6 +655,202 @@ class ColumnSequenceUpdateTestCase(APITestCase):
         )
 
 
+# 컬럼 삭제 테스트
+class ColumnDeleteTestCase(APITestCase):
+    fixtures = ['db.json']
+
+    def setUp(self):
+        # APIClient 객체 생성
+        self.client = APIClient()
+
+        # /api/v1/boards/column/delete/
+        self.url = reverse('column_delete')
+
+    # 정상적인 컬럼 삭제 케이스
+    def test_default(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 삭제에 필요한 데이터 생성
+        request_data = {
+            'column': 1,
+        }
+
+        response = self.client.delete(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
+
+    # 컬럼 id 없이 삭제를 시도하는 케이스
+    def test_no_column_id(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 데이터가 없음
+        request_data = {}
+
+        response = self.client.delete(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
+
+    # 유효하지 않은 값으로 삭제를 시도하는 케이스
+    def test_invalid_id(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 컬럼 id 값이 유효하지 않음
+        request_data = {
+            'column': 'INVALID'
+        }
+
+        response = self.client.delete(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
+
+    # 존재하지 않는 컬럼 id를 입력하는 케이스
+    def test_column_out_of_range(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 존재하지 않는 컬럼 id를 입력함
+        request_data = {
+            'column': 100
+        }
+
+        response = self.client.delete(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
+
+    # 팀장이 아닌 사용자가 삭제를 시도하는 케이스
+    def test_not_leader(self):
+        # 기존 DB의 사용자 중 팀장이 아닌 사용자로 로그인 시도
+        login_data = {
+            'username': 'normaluser1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 정상적인 데이터
+        request_data = {
+            'column': 1
+        }
+
+        response = self.client.delete(self.url, request_data)
+
+        # 컬럼은 팀장만 삭제 가능
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+            response.data
+        )
+
+    # 팀에 소속되지 않은 사용자가 삭제를 시도하는 케이스
+    def test_not_teammate(self):
+        # 기존 DB의 사용자 중 팀에 소속되지 않은 사용자로 로그인 시도
+        login_data = {
+            'username': 'normaluser4',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 정상적인 데이터
+        request_data = {
+            'column': 1
+        }
+
+        response = self.client.delete(self.url, request_data)
+
+        # 해당 팀의 팀장에만 컬럼 삭제 권한이 주어짐
+        self.assertEqual(
+            response.status_code, status.HTTP_403_FORBIDDEN, response.data
+        )
+
+    # 인증되지 않은 사용자가 변경을 시도하는 케이스
+    def test_not_teammate(self):
+        # 정상적인 데이터
+        request_data = {
+            'column': 1
+        }
+
+        response = self.client.delete(self.url, request_data)
+
+        # 인증된 사용자에게 권한을 부여하므로, 인증되지 않으면 사용 불가
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data
+        )
+
+
 # 보드 목록 테스트
 class BoardListTestCase(APITestCase):
     fixtures = ['db.json']

@@ -245,6 +245,38 @@ class ColumnUpdateSequenceView(APIView):
         )
 
 
+# /api/v1/boards/board/column/delete/
+class ColumnDeleteView(APIView):
+    # 권한 설정
+    # 인증된 사용자, 팀장에 권한 부여
+    permission_classes = [IsAuthenticated, IsTeamLeader]
+
+    def delete(self, request):
+        user = request.user
+
+        # 사용자 그룹 정보로 팀 객체 가져옴
+        own_board = Board.objects.get(
+            team__name=user.groups.exclude(name='leader').first().name
+        )
+
+        try:
+            # 현재 사용자의 팀이 소유한 보드의 특정 컬럼을 가져옴
+            column = Column.objects.get(
+                id=request.data.get('column'),
+                board=own_board
+            )
+        except (ObjectDoesNotExist, ValueError) as error:
+            return Response({'data': f'{error}'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 해당 컬럼 삭제
+        column.delete()
+
+        # 컬럼이 삭제된 다음의 보드 제공
+        serializer = BoardSerializer(own_board)
+
+        return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+
+
 # /api/v1/boards/board/list/
 class BoardListView(APIView):
     # 권한 설정
@@ -276,11 +308,9 @@ class BoardListView(APIView):
         # {
         #    'team': '팀명',
         #    'column': {
-        #       '컬럼id': {
-        #            '컬럼제목': '컬럼 순서'
-        #       },
-        #       '컬럼id': {
-        #            '컬럼제목': '컬럼 순서'
+        #       '컬럼제목': {
+        #           'id': 컬럼 id,
+        #           'sequence': 컬럼 순서
         #       },
         #        ...
         #     }

@@ -4,7 +4,8 @@ from .views import (
     BoardListView,
     ColumnCreateView,
     ColumnUpdateView,
-    ColumnUpdateSequenceView
+    ColumnUpdateSequenceView,
+    ColumnDeleteView
 )
 
 
@@ -17,4 +18,5 @@ urlpatterns = [
         ColumnUpdateSequenceView.as_view(),
         name='column_sequence_update'
     ),
+    path('column/delete/', ColumnDeleteView.as_view(), name='column_delete')
 ]
