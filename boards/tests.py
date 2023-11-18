@@ -182,3 +182,98 @@ class ColumnCreateTestCase(APITestCase):
             print(response.data)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+# 보드 목록 테스트
+class BoardListTestCase(APITestCase):
+    fixtures = ['db.json']
+
+    def setUp(self):
+        # APIClient 객체 생성
+        self.client = APIClient()
+
+        # /api/v1/boards/board/list/
+        self.url = reverse('board_list')
+
+    # 팀장이 보드를 확인하는 케이스
+    def test_leader_reads(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        response = self.client.get(self.url)
+
+        if response.status_code != 200:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    # 팀원이 보드를 확인하는 케이스
+    def test_teammate_reads(self):
+        # 기존 DB의 사용자 중 팀원 사용자로 로그인 시도
+        login_data = {
+            'username': 'normaluser1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        response = self.client.get(self.url)
+
+        if response.status_code != 200:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    # 팀에 소속되지 않은 사용자가 보드를 확인하는 케이스
+    def test_outsider_reads(self):
+        # 기존 DB의 사용자 중 팀에 소속되지 않은 사용자로 로그인 시도
+        login_data = {
+            'username': 'normaluser4',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        response = self.client.get(self.url)
+
+        # 권한 문제이기 때문에 상태코드는 403이 나옴
+        if response.status_code != 403:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # 인증되지 않은 사용자가 보드를 확인하는 케이스
+    def test_outsider_reads(self):
+        response = self.client.get(self.url)
+
+        # 인증 문제이기 때문에 상태코드는 401이 나옴
+        if response.status_code != 401:
+            print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

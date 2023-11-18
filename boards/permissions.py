@@ -27,3 +27,13 @@ class CanCreateColumn(BasePermission):
         # 해당 팀의 팀장만 컬럼 생성 가능
         # 해당 팀의 팀장이다 → True / 그 외 → False
         return (user.groups.filter(name='leader').exists()) and (team.leader == user)
+
+
+# 보드 목록 확인은 팀장과 팀원만 가능함
+# 관련 권한 정의
+class CanReadBoardList(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+
+        # 팀장 이외의 그룹은 모두 팀 그룹이므로
+        return user.groups.exclude(name='leader').exists()
