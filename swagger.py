@@ -95,7 +95,7 @@ TICKET_CREATE_PARAMETER = openapi.Schema(
 TICKET_UPDATE_PARAMETER = openapi.Schema(
     type=openapi.TYPE_OBJECT,
     properties={
-        'column': openapi.Schema(type=openapi.TYPE_INTEGER, description='컬럼 id'),
+        'ticket': openapi.Schema(type=openapi.TYPE_INTEGER, description='티켓 id'),
         'charge': openapi.Schema(type=openapi.TYPE_STRING, description='담당자 계정명'),
         'title': openapi.Schema(type=openapi.TYPE_STRING, description='티켓 제목'),
         'tag': openapi.Schema(type=openapi.TYPE_STRING, description='태그'),
