@@ -1448,6 +1448,38 @@ class TicketUpdateTestCase(APITestCase):
             response.status_code, status.HTTP_200_OK, response.data
         )
 
+    # 유효하지 않은 태그로 수정을 시도하는 케이스
+    def test_invalid_tag(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 유효하지 않은 태그값
+        request_data = {
+            'ticket': 1,
+            'title': 'update',
+            'tag': 'INVALID',
+            'volume': 4,
+            'ended_at': '2023-11-20'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
+
     # 수정할 데이터 없이 수정을 시도하는 케이스
     def test_no_data(self):
         # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
