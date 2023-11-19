@@ -105,6 +105,7 @@ class ColumnUpdateView(APIView):
             200: SUCCESS_MESSAGE_200,
             400: ERROR_MESSAGE_400,
             401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403,
             404: ERROR_MESSAGE_404
         }
     )
@@ -424,6 +425,86 @@ class TicketCreateView(APIView):
             return Response({'data': serializer.data}, status=status.HTTP_201_CREATED)
 
         # 값이 유효하지 않은 경우
+        return Response({'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# /api/v1/boards/ticket/update/
+class TicketUpdateView(APIView):
+    # 권한 설정
+    # 인증된 사용자, 팀 구성원 전체에 권한 부여
+    permission_classes = [IsAuthenticated, IsTeamMember]
+
+    @swagger_auto_schema(
+        operation_id='티켓 수정',
+        operation_description='티켓 id와 기타 데이터를 받아 티켓을 수정합니다.',
+        tags=['티켓', '수정'],
+        request_body=COLUMN_UPDATE_PARAMETER,
+        responses={
+            200: SUCCESS_MESSAGE_200,
+            400: ERROR_MESSAGE_400,
+            401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403,
+            404: ERROR_MESSAGE_404
+        }
+    )
+    def put(self, request):
+        if request.data.get('sequence'):
+            return Response(
+                {'data': '순서 변경은 시도할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = request.user
+
+        # request.data는 불변 객체
+        # 값이 변경되어야 하는 케이스들이 있으므로 깊은 복사한 값을 사용
+        request_data = request.data.copy()
+
+        # 사용자 그룹 정보로 팀 객체 가져옴
+        own_board = Board.objects.get(
+            team__name=user.groups.exclude(name='leader').first().name
+        )
+
+        try:
+            ended_at = request.data.get('ended_at')
+
+            if ended_at is not None:
+                ended_at = datetime.strptime(ended_at, '%Y-%m-%d').date()
+                request_data['ended_at'] = ended_at
+        except AssertionError as error:
+            return Response(
+                {'data': f'{error}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 현재 사용자의 팀이 소유한 보드의 특정 티켓을 가져옴
+            ticket = Ticket.objects.get(
+                id=request.data.get('ticket'),
+                column__board=own_board
+            )
+
+            # 담당자를 지정했는지 체크
+            charge_username = request.data.get('charge')
+            # 만약 지정해서 계정명이 넘어왔다면
+            if charge_username is not None:
+                # 해당 사용자 객체를 찾고
+                charge = User.objects.get(username=charge_username)
+                # 그 사용자가 현재 수정을 시도하는 팀의 소속인지 확인
+                if charge.groups.exclude(name='leader').first().name != own_board.team.name:
+                    # 수정할 티켓이 속한 팀의 팀원이 아니라면 에러 발생
+                    raise ValueError
+
+                request_data['charge'] = charge.id
+        except (ObjectDoesNotExist, ValueError, AttributeError) as error:
+            return Response({'data': f'{error}'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 해당하는 필드만 업데이트
+        serializer = TicketSerializer(ticket, request_data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+
         return Response({'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
