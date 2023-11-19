@@ -295,7 +295,7 @@ class ColumnUpdateTestCase(APITestCase):
         )
 
     # 컬럼 순서 변경을 시도하는 케이스
-    def test_column_out_of_range(self):
+    def test_sequence_update(self):
         # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
         login_data = {
             'username': 'teamleader1',
@@ -355,7 +355,7 @@ class ColumnUpdateTestCase(APITestCase):
         )
 
     # 인증되지 않은 사용자가 변경을 시도하는 케이스
-    def test_not_teammate(self):
+    def test_not_authorized(self):
         # 정상적인 데이터
         request_data = {
             'column': 1,
@@ -1235,6 +1235,360 @@ class TicketCreateTestCase(APITestCase):
         response = self.client.post(self.url, request_data)
 
         # 인증 문제이기 때문에 상태코드는 401이 나옴
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED, response.data
+        )
+
+
+# 티켓 수정 테스트
+class TicketUpdateTestCase(APITestCase):
+    fixtures = ['db.json']
+
+    def setUp(self):
+        # APIClient 객체 생성
+        self.client = APIClient()
+
+        # /api/v1/boards/ticket/update/
+        self.url = reverse('ticket_update')
+
+    # 정상적인 티켓 수정 케이스
+    def test_default(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 티켓 수정에 필요한 데이터 생성
+        request_data = {
+            'ticket': 1,
+            'title': 'update',
+            'tag': 'Doc',
+            'volume': 4,
+            'ended_at': '2023-11-20',
+            'charge': 'normaluser1'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
+
+    # 팀원이 시도하는 정상적인 티켓 수정 케이스
+    def test_default_teammate(self):
+        # 기존 DB의 사용자 중 팀원 사용자로 로그인 시도
+        login_data = {
+            'username': 'normaluser1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 티켓 수정에 필요한 데이터 생성
+        request_data = {
+            'ticket': 1,
+            'title': 'update',
+            'tag': 'Doc',
+            'volume': 4,
+            'ended_at': '2023-11-20',
+            'charge': 'teamleader1'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
+
+    # 티켓 id 없이 수정을 시도하는 케이스
+    def test_no_ticket_id(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 티켓 id 없음
+        request_data = {
+            'title': 'update',
+            'tag': 'Doc',
+            'volume': 4,
+            'ended_at': '2023-11-20',
+            'charge': 'normaluser1'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
+
+    # 잘못된 티켓 id로 수정을 시도하는 케이스
+    def test_invalid_ticket_id(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 유효하지 않은 티켓 id
+        request_data = {
+            'ticket': 'INVALID',
+            'title': 'update',
+            'tag': 'Doc',
+            'volume': 4,
+            'ended_at': '2023-11-20',
+            'charge': 'teamleader1'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
+
+    # 없는 티켓 id로 수정을 시도하는 케이스
+    def test_ticket_id_over(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 유효하지 않은 티켓 id
+        request_data = {
+            'ticket': 3,
+            'title': 'update',
+            'tag': 'Doc',
+            'volume': 4,
+            'ended_at': '2023-11-20',
+            'charge': 'teamleader1'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
+
+    # 담당자 데이터 없이 수정을 시도하는 케이스
+    def test_no_charge(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 담당자 데이터 없음
+        request_data = {
+            'ticket': 1,
+            'title': 'update',
+            'tag': 'Doc',
+            'volume': 4,
+            'ended_at': '2023-11-20'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        # 정상적으로 값이 수정되어야 함
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.data
+        )
+
+    # 유효하지 않은 태그로 수정을 시도하는 케이스
+    def test_invalid_tag(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 유효하지 않은 태그값
+        request_data = {
+            'ticket': 1,
+            'title': 'update',
+            'tag': 'INVALID',
+            'volume': 4,
+            'ended_at': '2023-11-20'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
+
+    # 수정할 데이터 없이 수정을 시도하는 케이스
+    def test_no_data(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 데이터 없음
+        request_data = {}
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND, response.data
+        )
+
+    # 티켓 순서 변경을 시도하는 케이스
+    def test_sequence_update(self):
+        # 기존 DB의 사용자 중 팀장 사용자로 로그인 시도
+        login_data = {
+            'username': 'teamleader1',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 티켓 순서를 입력함
+        request_data = {
+            'ticket': 1,
+            'title': 'update',
+            'tag': 'Doc',
+            'volume': 4,
+            'ended_at': 2023-11-20,
+            'charge': 'normaluser1',
+            'sequence': 10
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST, response.data
+        )
+
+    # 팀에 소속되지 않은 사용자가 변경을 시도하는 케이스
+    def test_not_teammate(self):
+        # 기존 DB의 사용자 중 팀에 소속되지 않은 사용자로 로그인
+        login_data = {
+            'username': 'normaluser4',
+            'password': 'qwerty123!@#'
+        }
+
+        # 해당 데이터로 로그인 후 액세스 토큰 획득
+        access_token = self.client.post(
+            reverse('login'),
+            login_data
+        ).data.get('access')
+
+        # APIClient 객체에 인증 진행
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # 정상적인 데이터
+        request_data = {
+            'ticket': 1,
+            'title': 'update',
+            'tag': 'Doc',
+            'volume': 4,
+            'ended_at': 2023-11-20,
+            'charge': 'normaluser1'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        # 팀 구성원 전체에 권한이 부여되므로, 팀에 소속되지 않으면 사용 불가
+        self.assertEqual(
+            response.status_code, status.HTTP_403_FORBIDDEN, response.data
+        )
+
+    # 인증되지 않은 사용자가 변경을 시도하는 케이스
+    def test_not_authorized(self):
+        # 정상적인 데이터
+        request_data = {
+            'ticket': 1,
+            'title': 'update',
+            'tag': 'Doc',
+            'volume': 4,
+            'ended_at': 2023-11-20,
+            'charge': 'normaluser1'
+        }
+
+        response = self.client.put(self.url, request_data)
+
+        # 인증된 사용자에게 권한을 부여하므로, 인증되지 않으면 사용 불가
         self.assertEqual(
             response.status_code, status.HTTP_401_UNAUTHORIZED, response.data
         )
