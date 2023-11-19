@@ -8,6 +8,7 @@ from .views import (
     ColumnDeleteView,
     TicketCreateView,
     TicketUpdateView,
+    TicketUpdateSequenceView,
 )
 
 
@@ -23,4 +24,9 @@ urlpatterns = [
     path('column/delete/', ColumnDeleteView.as_view(), name='column_delete'),
     path('ticket/create/', TicketCreateView.as_view(), name='ticket_create'),
     path('ticket/update/', TicketUpdateView.as_view(), name='ticket_update'),
+    path(
+        'ticket/update/sequence/',
+        TicketUpdateSequenceView.as_view(),
+        name='ticket_sequence_update'
+    ),
 ]

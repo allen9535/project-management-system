@@ -102,5 +102,15 @@ TICKET_UPDATE_PARAMETER = openapi.Schema(
         'volume': openapi.Schema(type=openapi.TYPE_NUMBER, description='작업량'),
         'ended_at': openapi.Schema(type=openapi.TYPE_STRING, description='마감일')
     },
-    required=['column']
+    required=['ticket']
+)
+
+TICKET_UPDATE_SEQUENCE_PARAMETER = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'ticket': openapi.Schema(type=openapi.TYPE_INTEGER, description='티켓 id'),
+        'column_sequence': openapi.Schema(type=openapi.TYPE_INTEGER, description='변경할 컬럼 순서'),
+        'ticket_sequence': openapi.Schema(type=openapi.TYPE_INTEGER, description='변경할 티켓 순서')
+    },
+    required=['ticket', 'column_sequence', 'ticket_sequence']
 )
