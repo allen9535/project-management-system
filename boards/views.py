@@ -438,7 +438,7 @@ class TicketUpdateView(APIView):
         operation_id='티켓 수정',
         operation_description='티켓 id와 기타 데이터를 받아 티켓을 수정합니다.',
         tags=['티켓', '수정'],
-        request_body=COLUMN_UPDATE_PARAMETER,
+        request_body=TICKET_UPDATE_PARAMETER,
         responses={
             200: SUCCESS_MESSAGE_200,
             400: ERROR_MESSAGE_400,
