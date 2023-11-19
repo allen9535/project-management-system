@@ -60,21 +60,17 @@ class BoardSerializer(serializers.ModelSerializer):
         columns = Column.objects.filter(board=obj).order_by('sequence')
 
         column_data = {}
-        ticket_data = {}
         for column in columns:
             column_data[column.title] = {
                 'id': column.id,
                 'sequence': column.sequence
             }
 
+            ticket_data = {}
             # 현재 컬럼에 해당하는 모든 티켓을 오름차순으로 정렬
             tickets = Ticket.objects.filter(column=column).order_by('sequence')
             for ticket in tickets:
-                # try:
                 ticket_data[ticket.title] = {}
-                # except KeyError:
-                #     print('값없음')
-                #     continue
 
                 try:
                     ticket_data[ticket.title] = {

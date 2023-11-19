@@ -508,6 +508,165 @@ class TicketUpdateView(APIView):
         return Response({'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
+# /api/v1/boards/ticket/update/sequence/
+class TicketUpdateSequenceView(APIView):
+    # 권한 설정
+    # 인증된 사용자, 팀 구성원 전체에 권한 부여
+    permission_classes = [IsAuthenticated, IsTeamMember]
+
+    @swagger_auto_schema(
+        operation_id='티켓 순서 수정',
+        operation_description='변경할 컬럼 id와 티켓 id를 받아 티켓 순서를 수정합니다.',
+        tags=['티켓', '수정', '순서'],
+        request_body=TICKET_UPDATE_SEQUENCE_PARAMETER,
+        responses={
+            200: SUCCESS_MESSAGE_200,
+            400: ERROR_MESSAGE_400,
+            401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403,
+            404: ERROR_MESSAGE_404
+        }
+    )
+    def put(self, request):
+        user = request.user
+
+        # 사용자 그룹 정보로 팀 객체 가져옴
+        own_board = Board.objects.get(
+            team__name=user.groups.exclude(name='leader').first().name
+        )
+
+        try:
+            # 현재 사용자의 팀이 소유한 보드의 순서를 변경할 티켓을 가져옴
+            target_ticket = Ticket.objects.get(
+                id=request.data.get('ticket'),
+                column__board=own_board
+            )
+        except (ObjectDoesNotExist, ValueError) as error:
+            return Response({'data': f'{error}'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 유효하지 않은 순서값을 입력했을 때를 대비한 예외처리
+        try:
+            update_column_sequence = int(request.data.get('column_sequence'))
+            update_ticket_sequence = int(request.data.get('ticket_sequence'))
+        except (ValueError, TypeError) as error:
+            return Response(
+                {'data': f'{error}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 만약 컬럼 단위의 변경이 없다면
+            if update_column_sequence == target_ticket.column.sequence:
+                # 해당 컬럼의 티켓 갯수
+                ticket_count = len(
+                    Ticket.objects.filter(column=target_ticket.column)
+                )
+
+                # 티켓 단위의 변경도 없다면
+                if target_ticket.sequence == update_ticket_sequence:
+                    return Response(
+                        {'data': '데이터 수정이 완료되었습니다.'},
+                        status=status.HTTP_200_OK
+                    )
+                # 현재 컬럼의 전체 티켓 수보다 큰 값을 받았거나 0 이하의 값을 받았을 경우
+                elif (update_ticket_sequence > ticket_count) or (update_ticket_sequence <= 0):
+                    return Response(
+                        {'data': '유효한 순서값을 입력해주세요.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # 트랜잭션으로 관리
+                # 하나라도 문제가 발생하면 전부 롤백
+                with transaction.atomic():
+                    # 순서를 변경할 티켓의 순서가 원래 있던 자리보다 왼쪽으로 갈 때(순서값이 작아질 때)
+                    if target_ticket.sequence > update_ticket_sequence:
+                        # 순서를 변경할 티켓과 변경 후 가게 될 자리 사이에 있는 티켓들을 오름차순으로 가져옴
+                        before_target_tickets = Ticket.objects.filter(
+                            column=target_ticket.column,
+                            sequence__gte=update_ticket_sequence,
+                            sequence__lt=target_ticket.sequence
+                        ).order_by('sequence')
+
+                        # 순회하면서 순서값들을 1씩 상승
+                        for ticket in before_target_tickets:
+                            ticket.sequence += 1
+                            ticket.save()
+
+                        target_ticket.sequence = update_ticket_sequence
+                        target_ticket.save()
+                    # 순서를 변경할 컬럼의 순서가 원래 있던 자리보다 오른쪽으로 갈 때(순서값이 커질 때)
+                    else:
+                        # 순서를 변경할 컬럼과 변경 후 가게 될 자리 사이에 있는 컬럼들을 오름차순으로 가져옴
+                        after_target_tickets = Ticket.objects.filter(
+                            column=target_ticket.column,
+                            sequence__gt=target_ticket.sequence,
+                            sequence__lte=update_ticket_sequence
+                        ).order_by('sequence')
+
+                        # 순회하면서 순서값들을 1씩 감소
+                        for ticket in after_target_tickets:
+                            ticket.sequence -= 1
+                            ticket.save()
+
+                        # 순서를 변경할 티켓의 순서를 변경하고자 했던 순서로 변경
+                        target_ticket.sequence = update_ticket_sequence
+                        target_ticket.save()
+            # 컬럼 단위의 변경이 있다면
+            else:
+                try:
+                    destination_column = Column.objects.get(
+                        board=own_board,
+                        sequence=update_column_sequence
+                    )
+                except ObjectDoesNotExist as error:
+                    return Response(
+                        {'data': f'{error}'},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+
+                # 도착할 컬럼의, 티켓 데이터가 들어갈 순서값 이상의 데이터를 오름차순으로
+                destination_column_tickets = Ticket.objects.filter(
+                    column=destination_column,
+                    sequence__gte=update_ticket_sequence
+                ).order_by('sequence')
+
+                # 원래 있던 컬럼의 티켓 데이터를 오름차순으로
+                past_column_tickets = Ticket.objects.filter(
+                    column=target_ticket.column
+                ).order_by('sequence')
+
+                # 트랜잭션으로 관리
+                # 하나라도 문제가 발생하면 전부 롤백
+                with transaction.atomic():
+                    # 순회 돌면서 순서를 수정할 티켓이 들어갈 자리 이상의 순서값을 가진 티켓들의 순서값을 전부 +1
+                    for ticket in destination_column_tickets:
+                        ticket.sequence += 1
+                        ticket.save()
+
+                    # 순서를 수정할 티켓값의 컬럼값과 순서값을 수정
+                    target_ticket.column = destination_column
+                    target_ticket.sequence = update_ticket_sequence
+                    target_ticket.save()
+
+                    # 원래 있던 컬럼의 티켓들을 순회하면서 순서 수정
+                    for i in range(len(past_column_tickets)):
+                        past_column_tickets[i].sequence = i + 1
+                        past_column_tickets[i].save()
+        except DatabaseError as error:
+            return Response(
+                {'data': f'{error}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # 직렬화
+        serializer = BoardSerializer(own_board)
+
+        return Response(
+            {'data': serializer.data},
+            status=status.HTTP_200_OK
+        )
+
+
 # /api/v1/boards/board/list/
 class BoardListView(APIView):
     # 권한 설정
