@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, DatabaseError
+from django.core.cache import cache
 
 from drf_yasg.utils import swagger_auto_schema
 
@@ -83,6 +84,13 @@ class ColumnCreateView(APIView):
         if serializer.is_valid():
             serializer.save()
 
+            # 변경된 보드 데이터를 캐싱
+            cache.set(
+                f'{team.name}',
+                BoardSerializer(Board.objects.get(team=team)).data,
+                60 * 60
+            )
+
             # 값이 유효한 경우
             return Response({'data': serializer.data}, status=status.HTTP_201_CREATED)
 
@@ -136,6 +144,15 @@ class ColumnUpdateView(APIView):
         serializer = ColumnSerializer(column, request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+
+            # 변경된 보드 데이터를 캐싱
+            cache.set(
+                f'{own_board.team.name}',
+                BoardSerializer(
+                    Board.objects.get(team=own_board.team)
+                ).data,
+                60 * 60
+            )
 
             return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
@@ -248,6 +265,13 @@ class ColumnUpdateSequenceView(APIView):
         # 데이터 직렬화
         serializer = BoardSerializer(own_board)
 
+        # 변경된 보드 데이터를 캐싱
+        cache.set(
+            f'{own_board.team.name}',
+            serializer.data,
+            60 * 60
+        )
+
         return Response(
             {'data': serializer.data},
             status=status.HTTP_200_OK
@@ -294,6 +318,13 @@ class ColumnDeleteView(APIView):
 
         # 컬럼이 삭제된 다음의 보드 제공
         serializer = BoardSerializer(own_board)
+
+        # 변경된 보드 데이터를 캐싱
+        cache.set(
+            f'{own_board.team.name}',
+            serializer.data,
+            60 * 60
+        )
 
         return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
@@ -421,6 +452,13 @@ class TicketCreateView(APIView):
         if serializer.is_valid():
             serializer.save()
 
+            # 변경된 보드 데이터를 캐싱
+            cache.set(
+                f'{own_board.team.name}',
+                BoardSerializer(Board.objects.get(team=own_board.team)).data,
+                60 * 60
+            )
+
             # 값이 유효한 경우
             return Response({'data': serializer.data}, status=status.HTTP_201_CREATED)
 
@@ -502,6 +540,13 @@ class TicketUpdateView(APIView):
         serializer = TicketSerializer(ticket, request_data, partial=True)
         if serializer.is_valid():
             serializer.save()
+
+            # 변경된 보드 데이터를 캐싱
+            cache.set(
+                f'{own_board.team.name}',
+                BoardSerializer(Board.objects.get(team=own_board.team)).data,
+                60 * 60
+            )
 
             return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
@@ -661,6 +706,13 @@ class TicketUpdateSequenceView(APIView):
         # 직렬화
         serializer = BoardSerializer(own_board)
 
+        # 변경된 보드 데이터를 캐싱
+        cache.set(
+            f'{own_board.team.name}',
+            serializer.data,
+            60 * 60
+        )
+
         return Response(
             {'data': serializer.data},
             status=status.HTTP_200_OK
@@ -722,6 +774,13 @@ class TicketDeleteView(APIView):
         # 티켓이 삭제된 다음의 보드 제공
         serializer = BoardSerializer(own_board)
 
+        # 변경된 보드 데이터를 캐싱
+        cache.set(
+            f'{own_board.team.name}',
+            serializer.data,
+            60 * 60
+        )
+
         return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
 
@@ -749,10 +808,19 @@ class BoardListView(APIView):
             name=user.groups.exclude(name='leader').first().name
         )
 
+        # 팀 이름으로 저장된 보드 데이터가 있을 경우 해당 데이터 반환
+        cached_board = cache.get(f'{user_team.name}')
+        if cached_board:
+            return Response({'data': cached_board}, status=status.HTTP_200_OK)
+
         # 가져온 팀 객체로 보드 가져옴
         board = Board.objects.get(team=user_team)
         # 시리얼라이저로 직렬화 한 후 데이터 반환
         # 컬럼명과 순서를 딕셔너리 형태로 직렬화함
         serializer = BoardSerializer(board)
+
+        # 핵심 기능이므로 캐싱해둠
+        # 만료 시간은 1시간
+        cache.set(f'{user_team.name}', serializer.data, 60 * 60)
 
         return Response({'data': serializer.data}, status=status.HTTP_200_OK)

@@ -75,7 +75,7 @@ class BoardSerializer(serializers.ModelSerializer):
                 try:
                     ticket_data[ticket.title] = {
                         'id': ticket.id,
-                        'tag': ticket.tag,
+                        'tag': ticket.get_tag_display(),
                         'charge': ticket.charge.username,
                         'volume': ticket.volume,
                         'ended_at': ticket.ended_at,
@@ -84,7 +84,7 @@ class BoardSerializer(serializers.ModelSerializer):
                 except AttributeError:
                     ticket_data[ticket.title] = {
                         'id': ticket.id,
-                        'tag': ticket.tag,
+                        'tag': ticket.get_tag_display(),
                         'charge': None,
                         'volume': ticket.volume,
                         'ended_at': ticket.ended_at,

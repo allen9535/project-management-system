@@ -1,3 +1,5 @@
+from celery.schedules import crontab
+
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -30,6 +32,8 @@ THIRD_PARTY_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
+    'django_celery_beat',
+    'django_celery_results',
 ]
 
 SYSTEM_APPS = [
@@ -152,4 +156,21 @@ SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
         "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
     }
+}
+
+# Celery
+CELERY_BROKER_URL = 'amqp://localhost:5672'  # 로컬에서 테스트시
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+# Celery-beat
+CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_ENABLE_UTC = False
+CELERY_BEAT_SCHEDULE = {
+    'preload_boards': {
+        'task': 'boards.tasks.preload_boards',
+        # 월~금 09:00 스케쥴러 작동
+        'schedule': crontab(minute='0', hour='9', day_of_week='1-5'),
+    },
 }
