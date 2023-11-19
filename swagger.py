@@ -16,7 +16,8 @@ USER_REGISTER_PARAMETERS = openapi.Schema(
     properties={
         'username': openapi.Schema(type=openapi.TYPE_STRING, description='계정명'),
         'password': openapi.Schema(type=openapi.TYPE_STRING, description='비밀번호')
-    }
+    },
+    required=['username', 'password']
 )
 
 LOGIN_PARAMETERS = openapi.Schema(
@@ -24,30 +25,32 @@ LOGIN_PARAMETERS = openapi.Schema(
     properties={
         'username': openapi.Schema(type=openapi.TYPE_STRING, description='계정명'),
         'password': openapi.Schema(type=openapi.TYPE_STRING, description='비밀번호')
-    }
+    },
+    required=['username', 'password']
 )
 
 TEAM_CREATE_PARAMETERS = openapi.Schema(
     type=openapi.TYPE_OBJECT,
     properties={
         'name': openapi.Schema(type=openapi.TYPE_STRING, description='팀명')
-    }
+    },
+    required=['name']
 )
 
 TEAM_INVITE_PARAMETERS = openapi.Schema(
     type=openapi.TYPE_OBJECT,
     properties={
-        'target': openapi.Schema(type=openapi.TYPE_STRING, description='초대할 사용자명'),
-        'team': openapi.Schema(type=openapi.TYPE_STRING, description='초대하는 팀명')
-    }
+        'target': openapi.Schema(type=openapi.TYPE_STRING, description='초대할 사용자명')
+    },
+    required=['target']
 )
 
 COLUMN_CREATE_PARAMETER = openapi.Schema(
     type=openapi.TYPE_OBJECT,
     properties={
-        'team': openapi.Schema(type=openapi.TYPE_STRING, description='팀명'),
         'title': openapi.Schema(type=openapi.TYPE_STRING, description='컬럼 제목')
-    }
+    },
+    required=['title']
 )
 
 COLUMN_UPDATE_PARAMETER = openapi.Schema(
@@ -55,7 +58,8 @@ COLUMN_UPDATE_PARAMETER = openapi.Schema(
     properties={
         'column': openapi.Schema(type=openapi.TYPE_INTEGER, description='컬럼 id'),
         'title': openapi.Schema(type=openapi.TYPE_STRING, description='컬럼 제목')
-    }
+    },
+    required=['column']
 )
 
 COLUMN_UPDATE_SEQUENCE_PARAMETER = openapi.Schema(
@@ -63,12 +67,27 @@ COLUMN_UPDATE_SEQUENCE_PARAMETER = openapi.Schema(
     properties={
         'column': openapi.Schema(type=openapi.TYPE_INTEGER, description='컬럼 id'),
         'sequence': openapi.Schema(type=openapi.TYPE_STRING, description='컬럼 순서')
-    }
+    },
+    required=['column', 'sequence']
 )
 
 COLUMN_DELETE_PARAMETER = openapi.Schema(
     type=openapi.TYPE_OBJECT,
     properties={
         'column': openapi.Schema(type=openapi.TYPE_INTEGER, description='컬럼 id')
-    }
+    },
+    required=['column']
+)
+
+TICKET_CREATE_PARAMETER = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'column': openapi.Schema(type=openapi.TYPE_INTEGER, description='컬럼 id'),
+        'charge': openapi.Schema(type=openapi.TYPE_STRING, description='담당자 계정명'),
+        'title': openapi.Schema(type=openapi.TYPE_STRING, description='티켓 제목'),
+        'tag': openapi.Schema(type=openapi.TYPE_STRING, description='태그'),
+        'volume': openapi.Schema(type=openapi.TYPE_NUMBER, description='작업량'),
+        'ended_at': openapi.Schema(type=openapi.TYPE_STRING, description='마감일')
+    },
+    required=['column', 'title', 'tag', 'volume', 'ended_at']
 )

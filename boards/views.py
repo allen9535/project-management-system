@@ -10,10 +10,17 @@ from drf_yasg.utils import swagger_auto_schema
 
 from config.permissions import IsTeamLeader, IsTeamMember
 from teams.models import Team
-from .models import Board, Column
-from .serializers import ColumnSerializer, BoardSerializer
+from users.models import User
+from .models import Board, Column, Ticket
+from .serializers import (
+    ColumnSerializer,
+    BoardSerializer,
+    TicketSerializer
+)
 
 from swagger import *
+
+from datetime import datetime
 
 
 # /api/v1/boards/column/create/
@@ -31,7 +38,8 @@ class ColumnCreateView(APIView):
             201: SUCCESS_MESSAGE_201,
             400: ERROR_MESSAGE_400,
             401: ERROR_MESSAGE_401,
-            403: ERROR_MESSAGE_403
+            403: ERROR_MESSAGE_403,
+            404: ERROR_MESSAGE_404
         }
     )
     def post(self, request):
@@ -52,7 +60,7 @@ class ColumnCreateView(APIView):
             # 팀 객체로 보드 찾기
             board = Board.objects.get(team=team)
         except ObjectDoesNotExist as error:
-            return Response({'data': f'{error}'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'data': f'{error}'}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             # 보드 내부의 컬럼을 정렬
@@ -289,6 +297,136 @@ class ColumnDeleteView(APIView):
         return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
 
+# /api/v1/boards/ticket/create/
+class TicketCreateView(APIView):
+    # 권한 설정
+    # 팀에 소속된 팀원에게 권한 부여
+    permission_classes = [IsAuthenticated, IsTeamMember]
+
+    @swagger_auto_schema(
+        operation_id='티켓 생성',
+        operation_description='팀이 소유한 보드의 컬럼에 티켓 새로 생성합니다.',
+        tags=['티켓', '생성'],
+        request_body=TICKET_CREATE_PARAMETER,
+        responses={
+            201: SUCCESS_MESSAGE_201,
+            400: ERROR_MESSAGE_400,
+            401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403,
+            404: ERROR_MESSAGE_404
+        }
+    )
+    def post(self, request):
+        user = request.user
+
+        try:
+            # 티켓 제목
+            title = request.data.get('title')
+            # 컬럼 제목은 필수값이므로 없다면 오류 발생
+            if title is None:
+                raise ValueError
+
+            # 태그
+            tag = request.data.get('tag')
+            # 티켓 모델의 TAG_CHOICES
+            # 튜플을 묶은 리스트 형태
+            tag_list = Ticket.TAG_CHOICES
+            # 마지막 태그값
+            tag_list_last = tag_list[len(tag_list) - 1]
+            # 태그 순회
+            for tag_data in tag_list:
+                # 태그의 코드값(FE, BE ...) 과 태그명(Frontend, Backend ...)
+                # 어느것도 일치하지 않고 마지막 값인 경우
+                if (tag != tag_data[0]) and (tag != tag_data[1]) and (tag_data == tag_list_last):
+                    return Response(
+                        {'data': '잘못된 태그가 입력되었습니다.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                # 태그에 일치하는 것이 있을 경우
+                elif (tag == tag_data[0]) or (tag == tag_data[1]):
+                    # 태그에 일치하면 DB에 저장될 값을 설정
+                    tag = tag_data[0]
+                    # 반복문 탈출
+                    break
+
+            # 작업량(소수)
+            volume = float(request.data.get('volume'))
+
+            # 마감일(Date): 형식을 YYYY-MM-DD 형식으로
+            ended_at = datetime.strptime(
+                request.data.get('ended_at'),
+                '%Y-%m-%d'
+            ).date()
+            # 만약이 마감일이 오늘 미만(eg. 어제, 모래 ...)일 경우 오류 발생
+            if ended_at < datetime.now().date():
+                raise ValueError
+        except (ValueError, TypeError) as error:
+            return Response(
+                {'data': f'{error}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 사용자 그룹 정보로 팀 객체 가져옴
+            own_board = Board.objects.get(
+                team__name=user.groups.exclude(name='leader').first().name
+            )
+
+            # 입력된 컬럼 id와 보드가 일치하는 컬럼을 가져옴
+            # 컬럼 id는 정상적인데 타 팀의 보드인 경우 방지
+            column = Column.objects.get(
+                board=own_board,
+                id=int(request.data.get('column')),
+            )
+        except (TypeError, ValueError, ObjectDoesNotExist) as error:
+            return Response(
+                {'data': f'{error}'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            # 컬럼 내부의 티켓을 정렬
+            # 순서 필드를 내림차순으로 정렬하면 첫번째 객체는 가장 마지막에 위치하고 있는 티켓이 됨
+            last_sequence = Ticket.objects.filter(
+                column=column
+            ).order_by('-sequence').first().sequence + 1
+        except AttributeError:
+            # 컬럼 내부에 티켓이 없다면 순서를 1번으로 설정
+            last_sequence = 1
+
+        charge_user = request.data.get('charge')
+        if charge_user is not None:
+            # 입력받은 담당자 계정명이 유효하지 않은 경우
+            try:
+                charge_user = User.objects.get(username=charge_user).id
+            except ObjectDoesNotExist as error:
+                return Response(
+                    {'data': f'{error}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        # 직렬화 전 데이터를 묶어줌
+        ticket_data = {
+            'column': column.id,
+            'charge': charge_user,
+            'title': title,
+            'tag': tag,
+            'sequence': last_sequence,
+            'volume': volume,
+            'ended_at': ended_at,
+        }
+
+        serializer = TicketSerializer(data=ticket_data)
+        if serializer.is_valid():
+            serializer.save()
+
+            # 값이 유효한 경우
+            return Response({'data': serializer.data}, status=status.HTTP_201_CREATED)
+
+        # 값이 유효하지 않은 경우
+        return Response({'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 # /api/v1/boards/board/list/
 class BoardListView(APIView):
     # 권한 설정
@@ -317,16 +455,6 @@ class BoardListView(APIView):
         board = Board.objects.get(team=user_team)
         # 시리얼라이저로 직렬화 한 후 데이터 반환
         # 컬럼명과 순서를 딕셔너리 형태로 직렬화함
-        # {
-        #    'team': '팀명',
-        #    'column': {
-        #       '컬럼제목': {
-        #           'id': 컬럼 id,
-        #           'sequence': 컬럼 순서
-        #       },
-        #        ...
-        #     }
-        # }
         serializer = BoardSerializer(board)
 
         return Response({'data': serializer.data}, status=status.HTTP_200_OK)

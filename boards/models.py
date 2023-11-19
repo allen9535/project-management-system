@@ -45,7 +45,11 @@ class Ticket(models.Model):
         verbose_name='담당자'
     )
     title = models.TextField(verbose_name='제목')
-    tag = models.CharField(max_length=10, choices=TAG_CHOICES)
+    tag = models.CharField(
+        max_length=10,
+        choices=TAG_CHOICES,
+        verbose_name='태그'
+    )
     sequence = models.PositiveIntegerField(verbose_name='순서')
     volume = models.FloatField(verbose_name='작업량')
     ended_at = models.DateField(verbose_name='마감일')
