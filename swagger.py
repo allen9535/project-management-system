@@ -114,3 +114,11 @@ TICKET_UPDATE_SEQUENCE_PARAMETER = openapi.Schema(
     },
     required=['ticket', 'column_sequence', 'ticket_sequence']
 )
+
+TICKET_DELETE_PARAMETER = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'ticket': openapi.Schema(type=openapi.TYPE_INTEGER, description='티켓 id')
+    },
+    required=['ticket']
+)

@@ -667,6 +667,64 @@ class TicketUpdateSequenceView(APIView):
         )
 
 
+# /api/v1/boards/board/ticket/delete/
+class TicketDeleteView(APIView):
+    # 권한 설정
+    # 인증된 사용자, 팀장에 권한 부여
+    permission_classes = [IsAuthenticated, IsTeamMember]
+
+    @swagger_auto_schema(
+        operation_id='티켓 삭제',
+        operation_description='티켓 id를 입력받아 해당 티켓을 삭제합니다.',
+        tags=['컬럼', '삭제'],
+        request_body=TICKET_DELETE_PARAMETER,
+        responses={
+            200: SUCCESS_MESSAGE_200,
+            401: ERROR_MESSAGE_401,
+            403: ERROR_MESSAGE_403,
+            404: ERROR_MESSAGE_404
+        }
+    )
+    def delete(self, request):
+        user = request.user
+
+        # 사용자 그룹 정보로 팀 객체 가져옴
+        own_board = Board.objects.get(
+            team__name=user.groups.exclude(name='leader').first().name
+        )
+
+        try:
+            # 현재 사용자의 팀이 소유한 보드의 특정 티켓을 가져옴
+            ticket = Ticket.objects.get(
+                id=int(request.data.get('ticket')),
+                column__board=own_board
+            )
+        except (ObjectDoesNotExist, ValueError, TypeError) as error:
+            return Response({'data': f'{error}'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            with transaction.atomic():
+                # 해당 컬럼 삭제
+                ticket.delete()
+
+                # 남은 티켓들의 순서 정리
+                remain_tickets = Ticket.objects.filter(
+                    column=ticket.column
+                ).order_by('sequence')
+                for i in range(len(remain_tickets)):
+                    remain_tickets[i].sequence = (i + 1)
+        except DatabaseError as error:
+            return Response(
+                {'data': f'{error}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # 티켓이 삭제된 다음의 보드 제공
+        serializer = BoardSerializer(own_board)
+
+        return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+
+
 # /api/v1/boards/board/list/
 class BoardListView(APIView):
     # 권한 설정
